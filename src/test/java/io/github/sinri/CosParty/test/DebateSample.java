@@ -69,8 +69,9 @@ public class DebateSample extends KeelTest {
                                 req -> req
                                         .addTool(b -> b
                                                 .functionName(fn)
-                                                .functionDescription("设置是否结束辩论。")
+                                                .functionDescription("每轮辩论完毕后调用，设置是否结束辩论并给出主持人发言。每场辩论应至少进行三轮，在相对完整地讨论各种情况后才能结束。")
                                                 .propertyAsBoolean("should_terminate", "Boolean。必填。不可为空。如果为true则应结束辩论，为false则辩论应继续。")
+                                                .propertyAsString("round_conclusion", "String。必填。不可为空。每回合辩论结束后主持人发表的总结。")
                                         )
                                         .setToolChoice(OpenAIChatGptRequestToolChoiceOption.asFunction(fn))
                                         .addMessage(b -> b.user("作为主持人，判断一下当前的辩论内容是否已经足够丰富，确定是否结束辩论。请以此调用指定函数。"))
@@ -93,6 +94,12 @@ public class DebateSample extends KeelTest {
                                 JsonObject j = new JsonObject(argument);
                                 boolean shouldTerminate = j.getBoolean("should_terminate");
                                 Keel.getLogger().info("shouldStopDebate: shouldTerminate=" + shouldTerminate);
+
+                                String round_conclusion = j.getString("round_conclusion");
+                                if (round_conclusion != null) {
+                                    Keel.getLogger().notice("round_conclusion: " + round_conclusion);
+                                }
+
                                 return Future.succeededFuture(shouldTerminate);
                             }
                         });
