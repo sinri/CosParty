@@ -1,42 +1,33 @@
-package io.github.sinri.CosParty.test;
+package io.github.sinri.CosParty.test.debate;
 
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.request.OpenAIChatGptRequestToolChoiceOption;
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.response.OpenAIChatGptResponseFunctionCall;
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.response.OpenAIChatGptResponseToolCall;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMKit;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseChoice;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseToolFunctionCall;
+import io.github.sinri.CosParty.actor.Action;
 import io.github.sinri.CosParty.model.debate.Debate;
 import io.github.sinri.CosParty.model.debate.DebateHost;
 import io.github.sinri.CosParty.model.debate.Debater;
-import io.github.sinri.keel.logger.KeelLogLevel;
-import io.github.sinri.keel.tesuto.KeelTest;
+import io.github.sinri.CosParty.test.AnySample;
 import io.github.sinri.keel.tesuto.TestUnit;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 import static io.github.sinri.keel.facade.KeelInstance.Keel;
 
-public class DebateSample extends KeelTest {
-    @Override
-    protected @NotNull Future<Void> starting() {
-        return super.starting()
-                .compose(v -> {
-                    Keel.getConfiguration().loadPropertiesFile("config.properties");
-                    Keel.getLogger().setVisibleLevel(KeelLogLevel.NOTICE);
+/**
+ * 本样例使用纯AI进行了辩论型脑暴，并能给出总结。
+ */
+public class DebateSampleForBrainstorm extends AnySample {
 
-//                    AigcMix.enableVerboseLogger(KeelLogLevel.DEBUG);
-
-                    return Future.succeededFuture();
-                });
-    }
 
     @TestUnit
     public Future<Void> debate() {
-        TheDebateHost theDebateHost = new TheDebateHost();
-        TheDebaterAsDev theDebaterAsDev = new TheDebaterAsDev();
-        TheDebaterAsPM theDebaterAsPM = new TheDebaterAsPM();
-        TheDebaterAsUser theDebaterAsUser = new TheDebaterAsUser();
+        TheDebateHost theDebateHost = new TheDebateHost(getAnyLLMKit());
+        TheDebaterAsDev theDebaterAsDev = new TheDebaterAsDev(getAnyLLMKit());
+        TheDebaterAsPM theDebaterAsPM = new TheDebaterAsPM(getAnyLLMKit());
+        TheDebaterAsUser theDebaterAsUser = new TheDebaterAsUser(getAnyLLMKit());
         return new Debate(
                 theDebateHost,
                 List.of(theDebaterAsDev, theDebaterAsPM, theDebaterAsUser)
@@ -53,7 +44,9 @@ public class DebateSample extends KeelTest {
     }
 
     private static class TheDebateHost extends DebateHost {
-
+        public TheDebateHost(AnyLLMKit anyLLMKit) {
+            super(anyLLMKit);
+        }
 
         @Override
         public String getDebateTopic() {
@@ -61,32 +54,33 @@ public class DebateSample extends KeelTest {
         }
 
         @Override
-        public Future<Boolean> shouldStopDebate(List<ContextItem> context) {
+        public Future<Boolean> shouldStopDebate(List<Action> context) {
             if (context.size() > 6 && context.size() < 18) {
                 var fn = "setShouldDebateTerminate";
                 return this.applyToLLM(
                                 context,
                                 req -> req
-                                        .addTool(b -> b
+                                        .addFunctionToolDefinition(b -> b
                                                 .functionName(fn)
                                                 .functionDescription("每轮辩论完毕后调用，设置是否结束辩论并给出主持人发言。每场辩论应至少进行三轮，在相对完整地讨论各种情况后才能结束。")
                                                 .propertyAsBoolean("should_terminate", "Boolean。必填。不可为空。如果为true则应结束辩论，为false则辩论应继续。")
                                                 .propertyAsString("round_conclusion", "String。必填。不可为空。每回合辩论结束后主持人发表的总结。")
                                         )
-                                        .setToolChoice(OpenAIChatGptRequestToolChoiceOption.asFunction(fn))
-                                        .addMessage(b -> b.user("作为主持人，判断一下当前的辩论内容是否已经足够丰富，确定是否结束辩论。请以此调用指定函数。"))
+                                        .addUserMessage("作为主持人，判断一下当前的辩论内容是否已经足够丰富，确定是否结束辩论。请以此调用指定函数。")
                         )
-                        .compose(am -> {
-                            Keel.getLogger().info("shouldStopDebate by LLM", am.toJsonObject());
-                            List<OpenAIChatGptResponseToolCall> toolCalls = am.getToolCalls();
+                        .compose(anyLLMResponse -> {
+                            Keel.getLogger().info("shouldStopDebate by LLM: " + anyLLMResponse.toString());
+                            List<AnyLLMResponseChoice> choices = anyLLMResponse.getChoices();
+                            AnyLLMResponseChoice anyLLMResponseChoice = choices.get(0);
+
+                            List<AnyLLMResponseToolFunctionCall> toolCalls = anyLLMResponseChoice.getFunctionCalls();
                             if (toolCalls == null || toolCalls.isEmpty()) {
-                                Keel.getLogger().fatal("shouldStopDebate, LLM did not call tool function", am.toJsonObject());
+                                Keel.getLogger().fatal("shouldStopDebate, LLM did not call tool function");
                                 return Future.failedFuture("shouldStopDebate, LLM did not call tool function");
                             }
-                            OpenAIChatGptResponseToolCall toolCall = toolCalls.get(0);
-                            OpenAIChatGptResponseFunctionCall functionCall = toolCall.getFunction();
-                            String argument = functionCall.getArguments();
-                            Keel.getLogger().info("shouldStopDebate: " + functionCall.getName() + " with " + argument);
+                            AnyLLMResponseToolFunctionCall functionCall = toolCalls.get(0);
+                            String argument = functionCall.getFunctionArguments();
+                            Keel.getLogger().info("shouldStopDebate: " + functionCall.getFunctionName() + " with " + argument);
                             if (argument == null) {
                                 Keel.getLogger().error("shouldStopDebate, LLM did not get arguments");
                                 return Future.succeededFuture(false);
@@ -103,23 +97,17 @@ public class DebateSample extends KeelTest {
                                 return Future.succeededFuture(shouldTerminate);
                             }
                         });
-
-//                return this.applyToLLM(context, "作为主持人，判断一下当前的辩论内容是否已经足够丰富。如果辩论内容已经足够详实，回复“结束”，否则回复“继续”。")
-//                        .compose(s -> {
-//                            Keel.getLogger().fatal("shouldStopDebate by LLM: " + s);
-//                            if (s.contains("结束")) {
-//                                return Future.succeededFuture(true);
-//                            }
-//                            return Future.succeededFuture(false);
-//                        });
             } else {
                 return Future.succeededFuture(false);
             }
-            //return Future.succeededFuture(context.size() > 10);
         }
     }
 
     private abstract static class TheDebater extends Debater {
+        public TheDebater(AnyLLMKit anyLLMKit) {
+            super(anyLLMKit);
+        }
+
         @Override
         public String getAdditionalRule() {
             return "应真实客观提出论点，简明扼要，并提供必要的论据。每次发言不超过150字。";
@@ -127,6 +115,10 @@ public class DebateSample extends KeelTest {
     }
 
     private static class TheDebaterAsDev extends TheDebater {
+        public TheDebaterAsDev(AnyLLMKit anyLLMKit) {
+            super(anyLLMKit);
+        }
+
         @Override
         public String getActorName() {
             return "技术驱动派";
@@ -139,6 +131,10 @@ public class DebateSample extends KeelTest {
     }
 
     private static class TheDebaterAsPM extends TheDebater {
+        public TheDebaterAsPM(AnyLLMKit anyLLMKit) {
+            super(anyLLMKit);
+        }
+
         @Override
         public String getActorName() {
             return "产品规划驱动派";
@@ -152,6 +148,10 @@ public class DebateSample extends KeelTest {
     }
 
     private static class TheDebaterAsUser extends TheDebater {
+        public TheDebaterAsUser(AnyLLMKit anyLLMKit) {
+            super(anyLLMKit);
+        }
+
         @Override
         public String getActorName() {
             return "业务驱动派";

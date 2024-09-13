@@ -1,82 +1,56 @@
 package io.github.sinri.CosParty.actor;
 
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.ChatGPTKit;
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.message.AssistantMessage;
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.message.SystemMessage;
-import io.github.sinri.AiOnHttpMix.azure.openai.chatgpt.request.OpenAIChatGptRequest;
-import io.github.sinri.AiOnHttpMix.azure.openai.core.AzureOpenAIServiceMeta;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMKit;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMRequest;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponse;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
-
-import static io.github.sinri.keel.facade.KeelInstance.Keel;
 
 public abstract class ActorBasedOnChatGPT implements Actor {
-    private final ChatGPTKit chatGPTKit;
-    private final AzureOpenAIServiceMeta serviceMeta;
+    private final AnyLLMKit anyLLMKit;
 
-    public ActorBasedOnChatGPT() {
-        chatGPTKit = new ChatGPTKit();
-
-        var serviceName = "gpt-4-o";
-        String apiKey = Keel.config("azure.openai." + serviceName + ".apiKey");
-        String resourceName = Keel.config("azure.openai." + serviceName + ".resourceName");
-        String deployment = Keel.config("azure.openai." + serviceName + ".deployment");
-        String apiVersion = Keel.config("azure.openai." + serviceName + ".apiVersion");
-
-        serviceMeta = new AzureOpenAIServiceMeta(apiKey, resourceName, deployment, apiVersion);
+    public ActorBasedOnChatGPT(AnyLLMKit anyLLMKit) {
+        this.anyLLMKit = anyLLMKit;
     }
 
     @Override
-    public AzureOpenAIServiceMeta getServiceMeta() {
-        return serviceMeta;
+    public AnyLLMKit getAnyLLMKit() {
+        return anyLLMKit;
     }
 
-    @Override
-    public ChatGPTKit getChatGPTKit() {
-        return chatGPTKit;
-    }
-
-    protected final Future<AssistantMessage> applyToLLMDirectly(List<ContextItem> context) {
+    protected final Future<AnyLLMResponse> applyToLLMDirectly(List<Action> context) {
         return applyToLLM(context, req -> {
         });
     }
 
-    protected final Future<AssistantMessage> applyToLLMWithPrompt(List<ContextItem> context, @Nullable String content) {
+    protected final Future<AnyLLMResponse> applyToLLMWithPrompt(List<Action> context, @Nullable String content) {
         return applyToLLM(context, req -> {
             if (content != null) {
-                req.addMessage(b -> b.user(content));
+                req.addUserMessage(content);
             }
         });
     }
 
-    @Override
-    public final Future<AssistantMessage> applyToLLM(
-            List<ContextItem> context,
-            @Nullable Handler<OpenAIChatGptRequest> requestHandler
+    public final Future<AnyLLMResponse> applyToLLM(
+            List<Action> context,
+            @Nullable Handler<AnyLLMRequest> requestHandler
     ) {
-        String requestId = UUID.randomUUID().toString();
-        return getChatGPTKit().chatStream(
-                getServiceMeta(),
-                req -> {
-                    req.addMessage(new SystemMessage(getSystemPrompt()));
+        return getAnyLLMKit().requestWithStreamBuffer(req -> {
+            req.addSystemMessage(getSystemPrompt());
                     context.forEach(contextItem -> {
                         String msg = contextItem.message();
                         String actorName = contextItem.actorName();
-                        req.addMessage(b -> b.user("【" + actorName + "】：" + msg));
+                        req.addUserMessage("【" + actorName + "】：" + msg);
                     });
                     if (requestHandler != null) {
                         requestHandler.handle(req);
                     }
-                },
-                requestId
-        )
-//                .compose(x -> {
-//                    var c = x.getContent();
-//                    return Future.succeededFuture(c);
+        })
+//                .onSuccess(anyLLMResponse -> {
+//                    Keel.getLogger().fatal("anyLLMResponse:" + anyLLMResponse.toString());
 //                })
                 ;
     }
