@@ -2,13 +2,13 @@ package io.github.sinri.CosParty.model.debate;
 
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMKit;
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseChoice;
+import io.github.sinri.CosParty.actor.AbstractActor;
 import io.github.sinri.CosParty.actor.Action;
-import io.github.sinri.CosParty.actor.ActorBasedOnChatGPT;
 import io.vertx.core.Future;
 
 import java.util.List;
 
-public abstract class Debater extends ActorBasedOnChatGPT {
+public abstract class Debater extends AbstractActor {
     public Debater(AnyLLMKit anyLLMKit) {
         super(anyLLMKit);
     }

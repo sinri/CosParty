@@ -14,6 +14,7 @@ public interface Actor {
 
     /**
      * 决定是否发言以及发言的内容。
+     * 在得出最终发言过程中，可以执行任务、多次查询、反复会话等。
      *
      * @return Future of response text, which is nullable.
      */

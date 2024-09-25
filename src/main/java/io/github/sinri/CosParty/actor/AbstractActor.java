@@ -9,10 +9,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public abstract class ActorBasedOnChatGPT implements Actor {
+public abstract class AbstractActor implements Actor {
     private final AnyLLMKit anyLLMKit;
 
-    public ActorBasedOnChatGPT(AnyLLMKit anyLLMKit) {
+    public AbstractActor(AnyLLMKit anyLLMKit) {
         this.anyLLMKit = anyLLMKit;
     }
 
@@ -38,20 +38,25 @@ public abstract class ActorBasedOnChatGPT implements Actor {
             List<Action> context,
             @Nullable Handler<AnyLLMRequest> requestHandler
     ) {
-        return getAnyLLMKit().requestWithStreamBuffer(req -> {
+        Handler<AnyLLMRequest> handler = req -> {
             req.addSystemMessage(getSystemPrompt());
-                    context.forEach(contextItem -> {
-                        String msg = contextItem.message();
-                        String actorName = contextItem.actorName();
-                        req.addUserMessage("【" + actorName + "】：" + msg);
-                    });
-                    if (requestHandler != null) {
-                        requestHandler.handle(req);
-                    }
-        })
-//                .onSuccess(anyLLMResponse -> {
-//                    Keel.getLogger().fatal("anyLLMResponse:" + anyLLMResponse.toString());
-//                })
-                ;
+            context.forEach(contextItem -> {
+                String msg = contextItem.message();
+                String actorName = contextItem.actorName();
+                req.addUserMessage("【" + actorName + "】：" + msg);
+            });
+            if (requestHandler != null) {
+                requestHandler.handle(req);
+            }
+        };
+        if (useStreamRequestToLLMApi()) {
+            return getAnyLLMKit().requestWithStreamBuffer(handler);
+        } else {
+            return getAnyLLMKit().request(handler);
+        }
+    }
+
+    protected boolean useStreamRequestToLLMApi() {
+        return false;
     }
 }

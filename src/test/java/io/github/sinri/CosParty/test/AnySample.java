@@ -27,8 +27,8 @@ public class AnySample extends KeelTest {
                     Keel.getLogger().setVisibleLevel(KeelLogLevel.NOTICE);
 //                    AigcMix.enableVerboseLogger(KeelLogLevel.DEBUG);
 //                    anyLLMKit = initializeWithChatGPT("gpt-4-o");
-//                    anyLLMKit = initializeWithQwen(SupportedModel.QwenPlus);
-                    anyLLMKit = initializeWithVolces("doubao-pro-128k");
+                    anyLLMKit = initializeWithQwen(SupportedModel.QwenPlus);
+//                    anyLLMKit = initializeWithVolces("doubao-pro-128k");
                     return Future.succeededFuture();
                 });
     }

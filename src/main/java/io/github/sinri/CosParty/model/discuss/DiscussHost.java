@@ -2,14 +2,14 @@ package io.github.sinri.CosParty.model.discuss;
 
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMKit;
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseChoice;
+import io.github.sinri.CosParty.actor.AbstractActor;
 import io.github.sinri.CosParty.actor.Action;
-import io.github.sinri.CosParty.actor.ActorBasedOnChatGPT;
 import io.vertx.core.Future;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public abstract class DiscussHost extends ActorBasedOnChatGPT {
+public abstract class DiscussHost extends AbstractActor {
     private boolean toStop = false;
     private @Nullable String guideWord;
 

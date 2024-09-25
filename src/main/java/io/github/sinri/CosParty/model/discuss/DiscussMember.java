@@ -2,13 +2,13 @@ package io.github.sinri.CosParty.model.discuss;
 
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMKit;
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseChoice;
+import io.github.sinri.CosParty.actor.AbstractActor;
 import io.github.sinri.CosParty.actor.Action;
-import io.github.sinri.CosParty.actor.ActorBasedOnChatGPT;
 import io.vertx.core.Future;
 
 import java.util.List;
 
-public abstract class DiscussMember extends ActorBasedOnChatGPT {
+public abstract class DiscussMember extends AbstractActor {
     public DiscussMember(AnyLLMKit anyLLMKit) {
         super(anyLLMKit);
     }
