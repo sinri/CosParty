@@ -59,6 +59,7 @@ public class DebateSampleForBrainstorm extends AnySample {
                 var fn = "setShouldDebateTerminate";
                 return this.applyToLLM(
                                 context,
+                                null,
                                 req -> req
                                         .addFunctionToolDefinition(b -> b
                                                 .functionName(fn)

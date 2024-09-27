@@ -11,13 +11,13 @@ import java.util.function.Function;
 
 public class Discuss {
     private final DiscussHost host;
-    private final List<DiscussMember> members;
+    private final List<? extends DiscussMember> members;
     private final List<Action> context;
 
     @Nullable
     private Function<Action, Future<Void>> recentContextItemCallback;
 
-    public Discuss(DiscussHost host, List<DiscussMember> members) {
+    public Discuss(DiscussHost host, List<? extends DiscussMember> members) {
         this.host = host;
         this.members = members;
         context = new ArrayList<>();

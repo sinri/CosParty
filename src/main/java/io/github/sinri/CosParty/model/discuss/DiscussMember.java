@@ -28,9 +28,15 @@ public abstract class DiscussMember extends AbstractActor {
 
     @Override
     public Future<String> act(List<Action> context) {
+        StringBuilder sb = new StringBuilder();
+        context.forEach(action -> {
+            sb.append("【").append(action.actorName()).append("】说：\n")
+                    .append(action.message()).append("\n");
+        });
         return this.applyToLLMWithPrompt(
-                        context,
-                        "请作为【" + getActorName() + "】继续发表意见。"
+                        null,
+                        sb.append("请作为【").append(getActorName()).append("】继续发表意见。")
+                                .toString()
                 )
                 .compose(response -> {
                     // 大概率返回文本

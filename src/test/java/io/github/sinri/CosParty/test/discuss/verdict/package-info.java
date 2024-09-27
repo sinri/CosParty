@@ -1,0 +1,1 @@
+package io.github.sinri.CosParty.test.discuss.verdict;

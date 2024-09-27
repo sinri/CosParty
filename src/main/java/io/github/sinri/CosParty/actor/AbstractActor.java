@@ -22,29 +22,32 @@ public abstract class AbstractActor implements Actor {
     }
 
     protected final Future<AnyLLMResponse> applyToLLMDirectly(List<Action> context) {
-        return applyToLLM(context, req -> {
+        return applyToLLM(context, null, req -> {
         });
     }
 
     protected final Future<AnyLLMResponse> applyToLLMWithPrompt(List<Action> context, @Nullable String content) {
-        return applyToLLM(context, req -> {
-            if (content != null) {
-                req.addUserMessage(content);
-            }
+        return applyToLLM(context, content, req -> {
         });
     }
 
     public final Future<AnyLLMResponse> applyToLLM(
-            List<Action> context,
+            @Nullable List<Action> context,
+            @Nullable String content,
             @Nullable Handler<AnyLLMRequest> requestHandler
     ) {
         Handler<AnyLLMRequest> handler = req -> {
             req.addSystemMessage(getSystemPrompt());
-            context.forEach(contextItem -> {
-                String msg = contextItem.message();
-                String actorName = contextItem.actorName();
-                req.addUserMessage("【" + actorName + "】：" + msg);
-            });
+            if (context != null) {
+                context.forEach(contextItem -> {
+                    String msg = contextItem.message();
+                    String actorName = contextItem.actorName();
+                    req.addUserMessage("【" + actorName + "】：" + msg);
+                });
+            }
+            if (content != null) {
+                req.addUserMessage(content);
+            }
             if (requestHandler != null) {
                 requestHandler.handle(req);
             }
