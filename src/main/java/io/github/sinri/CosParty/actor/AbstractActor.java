@@ -31,31 +31,39 @@ public abstract class AbstractActor implements Actor {
         });
     }
 
-    public final Future<AnyLLMResponse> applyToLLM(
+    public Future<AnyLLMResponse> applyToLLM(
             @Nullable List<Action> context,
             @Nullable String content,
             @Nullable Handler<AnyLLMRequest> requestHandler
     ) {
-        Handler<AnyLLMRequest> handler = req -> {
+        return withLLM(req -> {
             req.addSystemMessage(getSystemPrompt());
+            StringBuilder um = new StringBuilder("现有各方参与的对话如下。\n\n");
             if (context != null) {
                 context.forEach(contextItem -> {
                     String msg = contextItem.message();
                     String actorName = contextItem.actorName();
-                    req.addUserMessage("【" + actorName + "】：" + msg);
+                    //req.addUserMessage("【" + actorName + "】：" + msg);
+                    um.append(actorName).append("的发言：\n").append(msg).append("\n");
                 });
             }
+            um.append("请在你所持有的立场、职责和能力范围内进行回复。");
             if (content != null) {
-                req.addUserMessage(content);
+                //req.addUserMessage(content);
+                um.append("\n下面是一些额外要求。\n").append(content);
             }
+            req.addUserMessage(um.toString());
             if (requestHandler != null) {
                 requestHandler.handle(req);
             }
-        };
+        });
+    }
+
+    protected final Future<AnyLLMResponse> withLLM(@Nullable Handler<AnyLLMRequest> requestHandler) {
         if (useStreamRequestToLLMApi()) {
-            return getAnyLLMKit().requestWithStreamBuffer(handler);
+            return getAnyLLMKit().requestWithStreamBuffer(requestHandler);
         } else {
-            return getAnyLLMKit().request(handler);
+            return getAnyLLMKit().request(requestHandler);
         }
     }
 
