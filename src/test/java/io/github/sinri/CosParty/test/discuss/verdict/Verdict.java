@@ -1,11 +1,14 @@
 package io.github.sinri.CosParty.test.discuss.verdict;
 
 import io.github.sinri.AiOnHttpMix.mix.AnyLLMKit;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseChoice;
+import io.github.sinri.AiOnHttpMix.mix.AnyLLMResponseToolFunctionCall;
 import io.github.sinri.CosParty.actor.Action;
 import io.github.sinri.CosParty.model.discuss.Discuss;
 import io.github.sinri.CosParty.model.discuss.DiscussHost;
 import io.github.sinri.CosParty.model.discuss.DiscussMember;
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -41,7 +44,7 @@ public class Verdict {
         memberMetaMap.put(
                 "数据源维护人员代表",
                 "尽可能地从数据源的角度，即外部平台、内部系统、数据维护人员等方面找数据事故原因；" +
-                        "例如外部平台是否有变动、内部系统是否有实现变更、数据维护人员是否维护错数据等。"
+                        "例如外部平台页面和结果是否有变动、外部平台有没有阻碍登录或废弃会话的动作、内部系统是否有实现变更、数据维护人员是否维护错数据等。"
         );
         memberMetaMap.put(
                 "产品经理代表",
@@ -79,20 +82,16 @@ public class Verdict {
     }
 
     public Future<String> run() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("# ACCIDENT VERDICT\n\n")
-//                .append("## Accident Detail\n\n")
-//                .append(accidentDetail)
-//                .append("\n\n")
-        ;
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("# ACCIDENT VERDICT\n\n");
         return this.discuss.run()
                 .compose(actions -> {
-                    //sb.append("## Discussion\n\n");
-                    actions.forEach(action -> {
-                        sb.append("## Saith ").append(action.actorName()).append("\n\n")
-                                .append(action.message()).append("\n\n");
-                    });
-                    return Future.succeededFuture(sb.toString());
+//                    actions.forEach(action -> {
+//                        sb.append("## Saith ").append(action.actorName()).append("\n\n")
+//                                .append(action.message()).append("\n\n");
+//                    });
+                    Action lastAction = actions.get(actions.size() - 1);
+                    return Future.succeededFuture(lastAction.message());
                 });
     }
 
@@ -146,6 +145,110 @@ public class Verdict {
                 e.printStackTrace();
                 return Future.succeededFuture(true);
             }
+        }
+
+        @Override
+        protected Future<String> actToStop(List<Action> context) {
+            var s = "本场讨论已经结束，请综合上面的讨论给出总结和最终的结论；输出一个JSON对象文本，不要有多余内容。\n输出样例如下：\n" +
+                    (new JsonObject()
+                            .put("conclusion", "讨论过程的总结")
+                            .put("fc", new JsonObject()
+                                    .put("major_side", "主要责任方")
+                                    .put("major_side_reason", "主要责任方的定责原因")
+                                    .put("minor_side", "次要责任方")
+                                    .put("minor_side_reason", "次要责任方的定责原因")
+                            )
+                            .toString()
+                    );
+            return this.applyToLLM(context, s, req -> {
+                    })
+                    .compose(response -> {
+//                        JsonObject result = new JsonObject();
+//
+//                        List<AnyLLMResponseChoice> choices = response.getChoices();
+//                        AnyLLMResponseChoice anyLLMResponseChoice = choices.get(0);
+//                        var fc_call_list = anyLLMResponseChoice.getFunctionCalls();
+//                        JsonObject fc = new JsonObject();
+//                        if (fc_call_list != null && !fc_call_list.isEmpty()) {
+//                            try {
+//                                AnyLLMResponseToolFunctionCall anyLLMResponseToolFunctionCall = fc_call_list.get(0);
+//                                String functionName = anyLLMResponseToolFunctionCall.getFunctionName();
+//                                String functionArguments = anyLLMResponseToolFunctionCall.getFunctionArguments();
+//
+//                                JsonObject parsed = new JsonObject(functionArguments);
+//                                String major_side = parsed.getString("major_side");
+//                                String major_side_reason = parsed.getString("major_side_reason");
+//                                String minor_side = parsed.getString("minor_side");
+//                                String minor_side_reason = parsed.getString("minor_side_reason");
+//
+//                                fc.put("major_side", major_side)
+//                                        .put("major_side_reason", major_side_reason)
+//                                        .put("minor_side", minor_side)
+//                                        .put("minor_side_reason", minor_side_reason);
+//                                ;
+//                            } catch (Exception e) {
+//                                fc.put("exception", e.getMessage());
+//                            }
+//                        } else {
+//                            fc = null;
+//                        }
+//
+//                        result.put("content", anyLLMResponseChoice.getContent())
+//                                .put("fc", fc);
+//
+//                        return Future.succeededFuture(result.toString());
+
+                        return Future.succeededFuture(response.getChoices().get(0).getContent());
+                    });
+        }
+
+        protected Future<String> actToStop_v2(List<Action> context) {
+            var s = "本场讨论已经结束，请综合上面的讨论给出总结和最终的结论，并给出该结论是否符合规范。";
+            return this.applyToLLM(context, s, req -> {
+                        req.addFunctionToolDefinition(builder -> builder
+                                .functionName("record_accident_result")
+                                .functionDescription("根据给定的参数中的数据事故的职责判定结果，返回这个结果是否符合规范。")
+                                .propertyAsString("major_side", "一个字符串，即唯一的一个主要责任方")
+                                .propertyAsString("major_side_reason", "一个字符串，主要责任方定责的解释说明")
+                                .propertyAsString("minor_side", "一个字符串，即次要责任方，可能有零个或多个，可用英文逗号隔开")
+                                .propertyAsString("minor_side_reason", "一个字符串，次要责任方定责的解释说明")
+                        );
+                    })
+                    .compose(response -> {
+                        JsonObject result = new JsonObject();
+
+                        List<AnyLLMResponseChoice> choices = response.getChoices();
+                        AnyLLMResponseChoice anyLLMResponseChoice = choices.get(0);
+                        var fc_call_list = anyLLMResponseChoice.getFunctionCalls();
+                        JsonObject fc = new JsonObject();
+                        if (fc_call_list != null && !fc_call_list.isEmpty()) {
+                            try {
+                                AnyLLMResponseToolFunctionCall anyLLMResponseToolFunctionCall = fc_call_list.get(0);
+                                String functionName = anyLLMResponseToolFunctionCall.getFunctionName();
+                                String functionArguments = anyLLMResponseToolFunctionCall.getFunctionArguments();
+
+                                JsonObject parsed = new JsonObject(functionArguments);
+                                String major_side = parsed.getString("major_side");
+                                String major_side_reason = parsed.getString("major_side_reason");
+                                String minor_side = parsed.getString("minor_side");
+                                String minor_side_reason = parsed.getString("minor_side_reason");
+
+                                fc.put("major_side", major_side)
+                                        .put("major_side_reason", major_side_reason)
+                                        .put("minor_side", minor_side)
+                                        .put("minor_side_reason", minor_side_reason);
+                            } catch (Exception e) {
+                                fc.put("exception", e.getMessage());
+                            }
+                        } else {
+                            fc = null;
+                        }
+
+                        result.put("content", anyLLMResponseChoice.getContent())
+                                .put("fc", fc);
+
+                        return Future.succeededFuture(result.toString());
+                    });
         }
     }
 

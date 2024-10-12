@@ -47,10 +47,11 @@ public abstract class AbstractActor implements Actor {
                     um.append(actorName).append("的发言：\n").append(msg).append("\n");
                 });
             }
-            um.append("请在你所持有的立场、职责和能力范围内进行回复。");
             if (content != null) {
                 //req.addUserMessage(content);
-                um.append("\n下面是一些额外要求。\n").append(content);
+                um.append(content);
+            } else {
+                um.append("请在你所持有的立场、职责和能力范围内进行回复。");
             }
             req.addUserMessage(um.toString());
             if (requestHandler != null) {

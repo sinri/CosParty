@@ -35,25 +35,26 @@ public abstract class DiscussHost extends AbstractActor {
 
     @Override
     public Future<String> act(List<Action> context) {
-        String s;
         if (isToStop()) {
-            s = "本场讨论已经结束，请综合上面的讨论，给出总结和最终的结论。";
-        } else {
-            if (getGuideWord() != null && !getGuideWord().isBlank()) {
-                context.add(new Action(this.getActorName(), getGuideWord()));
-            }
-            s = null;
+            return actToStop(context);
         }
-        if (s != null) {
-            return this.applyToLLMWithPrompt(context, s)
-                    .compose(response -> {
-                        List<AnyLLMResponseChoice> choices = response.getChoices();
-                        AnyLLMResponseChoice anyLLMResponseChoice = choices.get(0);
-                        return Future.succeededFuture(anyLLMResponseChoice.getContent());
-                    });
-        } else {
-            return Future.succeededFuture(null);
+        if (getGuideWord() != null && !getGuideWord().isBlank()) {
+            context.add(new Action(this.getActorName(), getGuideWord()));
         }
+        return Future.succeededFuture(null);
+    }
+
+    /**
+     * 如果需要动用FC，那就重载。
+     */
+    protected Future<String> actToStop(List<Action> context) {
+        var s = "本场讨论已经结束，请综合上面的讨论，给出总结和最终的结论。";
+        return this.applyToLLMWithPrompt(context, s)
+                .compose(response -> {
+                    List<AnyLLMResponseChoice> choices = response.getChoices();
+                    AnyLLMResponseChoice anyLLMResponseChoice = choices.get(0);
+                    return Future.succeededFuture(anyLLMResponseChoice.getContent());
+                });
     }
 
     public boolean isToStop() {
