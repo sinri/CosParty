@@ -4,23 +4,45 @@ import io.github.sinri.CosParty.facade.CosplayScene;
 import io.github.sinri.CosParty.facade.CosplayScript;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class MikuScript implements CosplayScript {
-    private final @Nonnull Map<String, MikuScene> sceneMap;
-    private final @Nonnull String startSceneCode;
+    private final @Nonnull Map<String, CosplayScene> sceneMap;
+    private @Nonnull String startSceneCode = "";
 
-    public MikuScript(@Nonnull MikuScene startScene) {
+    @Nonnull
+    private String scenePackage = "";
+
+    public MikuScript() {
         sceneMap = new HashMap<>();
-        sceneMap.put(startScene.getSceneCode(), startScene);
-        this.startSceneCode = startScene.getSceneCode();
     }
 
-    public MikuScript addScene(@Nonnull MikuScene scene) {
+    public MikuScript setScenePackage(String scenePackage) {
+        this.scenePackage = scenePackage;
+        return this;
+    }
+
+    public MikuScript setStartSceneCode(@Nonnull String startSceneCode) {
+        this.startSceneCode = startSceneCode;
+        return this;
+    }
+
+    public MikuScript setStartSceneCode(@Nonnull Class<? extends MikuScene> startSceneClass) {
+        return this.setStartSceneCode(startSceneClass.getName());
+    }
+
+    public MikuScript addScene(@Nonnull CosplayScene scene) {
         sceneMap.put(scene.getSceneCode(), scene);
         return this;
+    }
+
+    public MikuScript addScene(@Nonnull Class<? extends MikuScene> sceneClass) {
+        CosplayScene scene = getSceneByCode(sceneClass.getName());
+        return addScene(scene);
     }
 
     @Nonnull
@@ -34,8 +56,24 @@ public class MikuScript implements CosplayScript {
     @Nonnull
     @Override
     public CosplayScene getSceneByCode(@Nonnull String sceneCode) {
-        var scene = this.sceneMap.get(sceneCode);
-        Objects.requireNonNull(scene);
-        return scene;
+        String className;
+        if (!scenePackage.isBlank() && !scenePackage.endsWith(".")) {
+            className = scenePackage + "." + sceneCode;
+        } else {
+            className = scenePackage + sceneCode;
+        }
+
+        try {
+            Class<?> aClass = Class.forName(className);
+            Constructor<?> constructor = aClass.getConstructor();
+            Object o = constructor.newInstance();
+            if (o instanceof CosplayScene) {
+                return (CosplayScene) o;
+            }
+            throw new RuntimeException("Class is not " + CosplayScene.class.getName());
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+                 InvocationTargetException e) {
+            throw new RuntimeException("Scene Code [%s] Error: %s".formatted(sceneCode, e.getMessage()), e);
+        }
     }
 }

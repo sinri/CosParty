@@ -1,8 +1,8 @@
 package io.github.sinri.CosParty.miku;
 
 import io.github.sinri.AiOnHttpMix.mix.chat.MixChatKit;
+import io.github.sinri.AiOnHttpMix.mix.service.NativeMixServiceAdapter;
 import io.github.sinri.AiOnHttpMix.mix.service.SupportedModelEnum;
-import io.github.sinri.CosParty.facade.CosplayEngine;
 import io.github.sinri.CosParty.facade.context.CosplayContext;
 import io.github.sinri.keel.logger.event.KeelEventLog;
 import io.github.sinri.keel.logger.issue.recorder.KeelIssueRecorder;
@@ -13,15 +13,15 @@ import javax.annotation.Nonnull;
 class SceneJudge extends MikuScene {
 
     public SceneJudge() {
-        super(SampleMikuScript.judgeSceneCode);
+        super();
     }
-
 
     @Nonnull
     @Override
-    protected Future<String> playInner(@Nonnull CosplayEngine cosplayEngine, @Nonnull KeelIssueRecorder<KeelEventLog> logger) {
-        CosplayContext cosplayContext = cosplayEngine.getCosplayContext();
-        MixChatKit mixChatKit = cosplayEngine.getMixChatKit();
+    protected Future<String> playInner(@Nonnull CosplayContext cosplayContext, @Nonnull KeelIssueRecorder<KeelEventLog> logger) {
+        NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
+        MixChatKit mixChatKit = MixChatKit.create(adapter);
+
         return cosplayContext.readString("first_answer")
                              .compose(firstAnswer -> {
                                  return mixChatKit.chatStream(
