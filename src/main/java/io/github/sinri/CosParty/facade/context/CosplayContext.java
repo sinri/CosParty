@@ -1,9 +1,11 @@
 package io.github.sinri.CosParty.facade.context;
 
-import io.vertx.core.Future;
+import io.github.sinri.CosParty.facade.context.conversation.ConversationContext;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 
 public interface CosplayContext {
@@ -15,70 +17,74 @@ public interface CosplayContext {
      * @param key the key to fetch value from context.
      * @return the value fetched mapped with the provided {@code key}, which might be {@code null}.
      */
-    Future<String> readString(@Nonnull String key);
+    @Nullable
+    String readString(@Nonnull String key);
 
-    default Future<Long> readLong(@Nonnull String key) {
-        return readString(key)
-                .compose(s -> {
-                    if (s == null) {
-                        return Future.succeededFuture(null);
-                    }
-                    var x = Long.parseLong(s);
-                    return Future.succeededFuture(x);
-                });
+    @Nullable
+    default Long readLong(@Nonnull String key) {
+        var s = readString(key);
+        if (s == null) {
+            return null;
+        }
+        return Long.parseLong(s);
     }
 
-    default Future<Integer> readInteger(@Nonnull String key) {
-        return readString(key)
-                .compose(s -> {
-                    if (s == null) {
-                        return Future.succeededFuture(null);
-                    }
-                    var x = Integer.parseInt(s);
-                    return Future.succeededFuture(x);
-                });
+    @Nullable
+    default Integer readInteger(@Nonnull String key) {
+        var s = readString(key);
+        if (s == null) {
+            return null;
+        }
+        return Integer.parseInt(s);
     }
 
-    default Future<Double> readDouble(@Nonnull String key) {
-        return readString(key)
-                .compose(s -> {
-                    if (s == null) {
-                        return Future.succeededFuture(null);
-                    }
-                    var x = Double.parseDouble(s);
-                    return Future.succeededFuture(x);
-                });
+    @Nullable
+    default Double readDouble(@Nonnull String key) {
+        var s = readString(key);
+        if (s == null) {
+            return null;
+        }
+        return Double.parseDouble(s);
     }
 
-    default Future<BigDecimal> readBigDecimal(@Nonnull String key) {
-        return readString(key)
-                .compose(s -> {
-                    if (s == null) {
-                        return Future.succeededFuture(null);
-                    }
-                    var x = new BigDecimal(s);
-                    return Future.succeededFuture(x);
-                });
+    @Nullable
+    default BigDecimal readBigDecimal(@Nonnull String key) {
+        var s = readString(key);
+        if (s == null) {
+            return null;
+        }
+        return new BigDecimal(s);
     }
 
-    default Future<JsonObject> readJsonObject(@Nonnull String key) {
-        return readString(key)
-                .compose(s -> {
-                    if (s == null) {
-                        return Future.succeededFuture(null);
-                    }
-                    var x = new JsonObject(s);
-                    return Future.succeededFuture(x);
-                });
+    @Nullable
+    default JsonObject readJsonObject(@Nonnull String key) {
+        var s = readString(key);
+        if (s == null) {
+            return null;
+        }
+        return new JsonObject(s);
     }
 
-    Future<Void> writeString(@Nonnull String key, @Nonnull String value);
+    @Nullable
+    default JsonArray readJsonArray(@Nonnull String key) {
+        var s = readString(key);
+        if (s == null) {
+            return null;
+        }
+        return new JsonArray(s);
+    }
 
-    default Future<Void> writeNumber(@Nonnull String key, @Nonnull Number value) {
+    CosplayContext writeString(@Nonnull String key, @Nonnull String value);
+
+    default CosplayContext writeNumber(@Nonnull String key, @Nonnull Number value) {
         return writeString(key, value.toString());
     }
 
-    default Future<Void> writeJsonObject(@Nonnull String key, @Nonnull JsonObject jsonObject) {
+    default CosplayContext writeJsonObject(@Nonnull String key, @Nonnull JsonObject jsonObject) {
         return writeString(key, jsonObject.toString());
     }
+
+    ConversationContext getConversationContext(int conversationContextId);
+
+    ConversationContext createConversationContext();
 }

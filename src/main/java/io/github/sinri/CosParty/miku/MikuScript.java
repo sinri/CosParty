@@ -26,13 +26,16 @@ public class MikuScript implements CosplayScript {
         return this;
     }
 
-    public MikuScript setStartSceneCode(@Nonnull String startSceneCode) {
+    public MikuScript confirmStartScene(@Nonnull String startSceneCode) {
+        if (!this.sceneMap.containsKey(startSceneCode)) {
+            throw new RuntimeException("This scene code is not registered");
+        }
         this.startSceneCode = startSceneCode;
         return this;
     }
 
-    public MikuScript setStartSceneCode(@Nonnull Class<? extends MikuScene> startSceneClass) {
-        return this.setStartSceneCode(startSceneClass.getName());
+    public MikuScript confirmStartScene(@Nonnull Class<? extends MikuScene> startSceneClass) {
+        return this.confirmStartScene(startSceneClass.getName());
     }
 
     public MikuScript addScene(@Nonnull CosplayScene scene) {

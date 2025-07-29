@@ -87,9 +87,10 @@ public abstract class CosplayEngine {
         return this.initialize()
                    .compose(initialized -> {
                        CosplayContext ctx = getCosplayContext();
-                       return Keel.asyncCallIteratively(inputMap.entrySet(), entry -> ctx.writeString(entry.getKey(), entry.getValue()));
-                   })
-                   .compose(inputDone -> {
+                       for (var entry : inputMap.entrySet()) {
+                           ctx.writeString(entry.getKey(), entry.getValue());
+                       }
+
                        return runAfterInitialization();
                    });
     }

@@ -1,13 +1,13 @@
-package io.github.sinri.CosParty.miku;
+package io.github.sinri.CosParty.miku.one;
 
+import io.github.sinri.CosParty.miku.MikuEngine;
+import io.github.sinri.CosParty.miku.MikuScript;
 import io.github.sinri.drydock.naval.raider.Privateer;
 import io.vertx.core.Future;
 
 import java.util.Map;
 
 public class MikuShow extends Privateer {
-    private final static String startingSceneCode = "STARTING_SCENE";
-    private final static String judgeSceneCode = "JUDGE_SCENE";
 
     @Override
     protected Future<Void> launchAsPrivateer() {
@@ -16,7 +16,7 @@ public class MikuShow extends Privateer {
         MikuScript mikuScript = new MikuScript();
         mikuScript.addScene(SceneStart.class);
         mikuScript.addScene(SceneJudge.class);
-        mikuScript.setStartSceneCode(SceneStart.class);
+        mikuScript.confirmStartScene(SceneStart.class);
 
         MikuEngine engine = new MikuEngine(mikuScript);
 
