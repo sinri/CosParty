@@ -108,7 +108,7 @@ public class ConversationContext {
      * @return 当前实例，支持链式调用
      */
     @Nonnull
-    public ConversationContext registerActor(@Nonnull Actor actor) {
+    public ConversationContext registerActor(@Nonnull DynamicActor actor) {
         this.actorMap.put(actor.getActorName(), actor);
         return this;
     }

@@ -1,5 +1,6 @@
 package io.github.sinri.CosParty.kernel.context.conversation;
 
+import io.github.sinri.keel.core.json.JsonifiableDataUnit;
 import io.github.sinri.keel.core.json.JsonifiableEntity;
 import io.vertx.core.json.JsonObject;
 
@@ -11,12 +12,12 @@ import javax.annotation.Nonnull;
  * 该类实现了 {@link JsonifiableEntity} 接口，支持 JSON 序列化和反序列化操作。
  *
  * @see Conversation
- * @see Actor
+ * @see DynamicActor
  * @since 1.0
  */
-public class Speech implements JsonifiableEntity<Speech> {
+public class Speech implements JsonifiableDataUnit {
     /**
-     * 发言角色的名称，与 {@link Actor#getActorName()} 返回值保持一致。
+     * 发言角色的名称，与 {@link DynamicActor#getActorName()} 返回值保持一致。
      * 在序列化时使用 "actor_name" 作为 JSON 键名。
      */
     private String actorName;
@@ -87,22 +88,10 @@ public class Speech implements JsonifiableEntity<Speech> {
      *
      * @param jsonObject 参照{@link Speech#toJsonObject()}的返回结果
      */
-    @Nonnull
     @Override
-    public Speech reloadDataFromJsonObject(@Nonnull JsonObject jsonObject) {
-        return this.setActorName(jsonObject.getString("actor_name"))
-                   .setContent(jsonObject.getString("content"));
-    }
-
-    /**
-     * 获取当前实现类的实例。
-     *
-     * @return 当前 Speech 实例
-     */
-    @Nonnull
-    @Override
-    public Speech getImplementation() {
-        return this;
+    public void reloadData(@Nonnull JsonObject jsonObject) {
+        this.setActorName(jsonObject.getString("actor_name"))
+            .setContent(jsonObject.getString("content"));
     }
 
     /**

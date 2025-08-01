@@ -8,7 +8,7 @@ import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
 
-class SceneJudge extends MikuScene {
+public class SceneJudge extends MikuScene {
 
     public SceneJudge() {
         super();

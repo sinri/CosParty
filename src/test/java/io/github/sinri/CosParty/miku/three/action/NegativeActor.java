@@ -1,8 +1,8 @@
 package io.github.sinri.CosParty.miku.three.action;
 
-import io.github.sinri.CosParty.kernel.context.conversation.Actor;
+import io.github.sinri.CosParty.kernel.context.conversation.DynamicActor;
 
-public final class NegativeActor extends Actor {
+public final class NegativeActor extends DynamicActor {
     public static final String ACTOR_NAME = "反方";
 
     NegativeActor() {

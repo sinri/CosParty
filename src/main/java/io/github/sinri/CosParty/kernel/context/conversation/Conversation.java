@@ -1,5 +1,6 @@
 package io.github.sinri.CosParty.kernel.context.conversation;
 
+import io.github.sinri.keel.core.json.JsonifiableDataUnit;
 import io.github.sinri.keel.core.json.JsonifiableEntity;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -12,7 +13,7 @@ import java.util.UUID;
 /**
  * 在一个{@link ConversationContext}下进行的一场连续的对话。
  * <p>
- * 对话包含多个发言（{@link Speech}），每个发言都有特定的发言者（{@link Actor}）。
+ * 对话包含多个发言（{@link Speech}），每个发言都有特定的发言者（{@link DynamicActor}）。
  * 对话具有唯一的对话代码，用于标识和管理。
  * <p>
  * 该类实现了{@link JsonifiableEntity}接口，支持JSON序列化和反序列化，
@@ -23,7 +24,7 @@ import java.util.UUID;
  * @see ConversationContext 对话上下文
  * @since 1.0
  */
-public class Conversation implements JsonifiableEntity<Conversation> {
+public class Conversation implements JsonifiableDataUnit {
     /**
      * 对话中的发言列表，按时间顺序存储
      */
@@ -100,29 +101,17 @@ public class Conversation implements JsonifiableEntity<Conversation> {
      *
      * @param jsonObject 参照{@link Conversation#toJsonObject()}的返回结果
      */
-    @Nonnull
     @Override
-    public Conversation reloadDataFromJsonObject(@Nonnull JsonObject jsonObject) {
+    public void reloadData(@Nonnull JsonObject jsonObject) {
         this.conversationCode = (jsonObject.getString("conversation_code"));
         this.speechList.clear();
         JsonArray array = jsonObject.getJsonArray("speech_list");
         array.forEach(item -> {
             var o = ((JsonObject) item);
-            Speech speech = new Speech().reloadDataFromJsonObject(o);
+            Speech speech = new Speech();
+            speech.reloadData(o);
             this.addSpeech(speech);
         });
-        return this;
-    }
-
-    /**
-     * 获取当前对话实例的实现对象
-     *
-     * @return 当前对话实例
-     */
-    @Nonnull
-    @Override
-    public Conversation getImplementation() {
-        return this;
     }
 
     /**

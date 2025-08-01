@@ -9,6 +9,7 @@ import io.github.sinri.CosParty.miku.three.action.DebateAction;
 import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
+import java.util.UUID;
 
 import static io.github.sinri.keel.facade.KeelInstance.Keel;
 
@@ -22,7 +23,9 @@ public class RandomMotionScene extends MikuScene {
         return mixChatKit.chatStream(SupportedModelEnum.QwenPlus, req -> {
                              req.addMessage(msg -> msg
                                      .setRole("user")
-                                     .setTextContent("为中国一所一流大学的辩论赛出一个辩题，直接输出。"));
+                                     .setTextContent("根据以下神秘字符串“%s”进行冥想，出一个符合大学生辩论赛场景的辩题，直接输出。"
+                                             .formatted(UUID.randomUUID().toString())
+                                     ));
                              req.setExtra(MixChatRequestExtra.create()
                                                              .setTemperature(1.6f)
                                                              .setSeed(Keel.randomHelper().getPRNG().nextInt()));

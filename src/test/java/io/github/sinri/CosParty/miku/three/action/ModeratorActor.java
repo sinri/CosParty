@@ -1,8 +1,8 @@
 package io.github.sinri.CosParty.miku.three.action;
 
-import io.github.sinri.CosParty.kernel.context.conversation.Actor;
+import io.github.sinri.CosParty.kernel.context.conversation.DynamicActor;
 
-public final class ModeratorActor extends Actor {
+public final class ModeratorActor extends DynamicActor {
     public static final String ACTOR_NAME = "主持人";
 
     ModeratorActor() {

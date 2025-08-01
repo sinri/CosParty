@@ -1,7 +1,7 @@
 package io.github.sinri.CosParty.miku.two;
 
-import io.github.sinri.CosParty.kernel.context.conversation.Actor;
 import io.github.sinri.CosParty.kernel.context.conversation.Conversation;
+import io.github.sinri.CosParty.kernel.context.conversation.DynamicActor;
 import io.github.sinri.CosParty.kernel.context.conversation.Speech;
 import io.github.sinri.CosParty.miku.MikuScene;
 import io.vertx.core.Future;
@@ -18,13 +18,14 @@ public class StartScene extends MikuScene {
         var conversationContext = getCurrentContext().createConversationContext();
         getCurrentContext().writeNumber(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID, conversationContext.getConversationContextIndex());
 
-        Actor actorHost = new Actor()
+        DynamicActor actorHost = new DynamicActor()
                 .setActorName("主持人")
                 .setActorInstruction("围绕议题主持讨论，在各方充分发表意见后进行分析总结，并给出自己的结论。");
         conversationContext.registerActor(actorHost);
         var array = getCurrentContext().readJsonArray(DiscussionScript.FIELD_MEMBERS);
         array.forEach(item -> {
-            var actor = new Actor().reloadDataFromJsonObject((JsonObject) item);
+            var actor = new DynamicActor();
+            actor.reloadData((JsonObject) item);
             conversationContext.registerActor(actor);
         });
 
