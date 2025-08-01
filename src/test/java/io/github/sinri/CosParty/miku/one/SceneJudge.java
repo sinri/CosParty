@@ -3,10 +3,7 @@ package io.github.sinri.CosParty.miku.one;
 import io.github.sinri.AiOnHttpMix.mix.chat.MixChatKit;
 import io.github.sinri.AiOnHttpMix.mix.service.NativeMixServiceAdapter;
 import io.github.sinri.AiOnHttpMix.mix.service.SupportedModelEnum;
-import io.github.sinri.CosParty.facade.context.CosplayContext;
 import io.github.sinri.CosParty.miku.MikuScene;
-import io.github.sinri.keel.logger.event.KeelEventLog;
-import io.github.sinri.keel.logger.issue.recorder.KeelIssueRecorder;
 import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
@@ -19,11 +16,11 @@ class SceneJudge extends MikuScene {
 
     @Nonnull
     @Override
-    protected Future<String> playInner(@Nonnull CosplayContext cosplayContext, @Nonnull KeelIssueRecorder<KeelEventLog> logger) {
+    protected Future<Void> playInner() {
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
         MixChatKit mixChatKit = MixChatKit.create(adapter);
 
-        var firstAnswer = cosplayContext.readString("first_answer");
+        var firstAnswer = getCurrentContext().readString("first_answer");
         return mixChatKit.chatStream(
                                  SupportedModelEnum.QwenPlus,
                                  req -> req
@@ -38,8 +35,8 @@ class SceneJudge extends MikuScene {
                          )
                          .compose(resp -> {
                              String textContent = resp.getMessage().getTextContent();
-                             logger.info("second_answer: " + textContent);
-                             cosplayContext.writeString("second_answer", textContent);
+                             getLogger().info("second_answer: " + textContent);
+                             getCurrentContext().writeString("second_answer", textContent);
                              return Future.succeededFuture(null);
                          });
     }

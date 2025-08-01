@@ -1,7 +1,7 @@
 package io.github.sinri.CosParty.miku;
 
-import io.github.sinri.CosParty.facade.CosplayScene;
-import io.github.sinri.CosParty.facade.CosplayScript;
+import io.github.sinri.CosParty.kernel.CosplayScene;
+import io.github.sinri.CosParty.kernel.CosplayScript;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class MikuScript implements CosplayScript {
+public abstract class MikuScript implements CosplayScript {
     private final @Nonnull Map<String, CosplayScene> sceneMap;
     private @Nonnull String startSceneCode = "";
 
@@ -43,8 +43,8 @@ public class MikuScript implements CosplayScript {
         return this;
     }
 
-    public MikuScript addScene(@Nonnull Class<? extends MikuScene> sceneClass) {
-        CosplayScene scene = getSceneByCode(sceneClass.getName());
+    public MikuScript addScene(@Nonnull Class<? extends CosplayScene> sceneClass) {
+        CosplayScene scene = loadSceneByCode(sceneClass.getName());
         return addScene(scene);
     }
 
@@ -58,7 +58,14 @@ public class MikuScript implements CosplayScript {
 
     @Nonnull
     @Override
-    public CosplayScene getSceneByCode(@Nonnull String sceneCode) {
+    public CosplayScene getSceneByCodeInScript(@Nonnull String sceneCode) {
+        if (!sceneMap.containsKey(sceneCode)) {
+            throw new IllegalArgumentException("Scene Code [%s] not found".formatted(sceneCode));
+        }
+        return sceneMap.get(sceneCode);
+    }
+
+    private CosplayScene loadSceneByCode(@Nonnull String sceneCode) {
         String className;
         if (!scenePackage.isBlank() && !scenePackage.endsWith(".")) {
             className = scenePackage + "." + sceneCode;

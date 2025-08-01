@@ -3,13 +3,10 @@ package io.github.sinri.CosParty.miku.two;
 import io.github.sinri.AiOnHttpMix.mix.chat.MixChatKit;
 import io.github.sinri.AiOnHttpMix.mix.service.NativeMixServiceAdapter;
 import io.github.sinri.AiOnHttpMix.mix.service.SupportedModelEnum;
-import io.github.sinri.CosParty.facade.context.CosplayContext;
-import io.github.sinri.CosParty.facade.context.conversation.Conversation;
-import io.github.sinri.CosParty.facade.context.conversation.ConversationContext;
-import io.github.sinri.CosParty.facade.context.conversation.Speech;
+import io.github.sinri.CosParty.kernel.context.conversation.Conversation;
+import io.github.sinri.CosParty.kernel.context.conversation.ConversationContext;
+import io.github.sinri.CosParty.kernel.context.conversation.Speech;
 import io.github.sinri.CosParty.miku.MikuScene;
-import io.github.sinri.keel.logger.event.KeelEventLog;
-import io.github.sinri.keel.logger.issue.recorder.KeelIssueRecorder;
 import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
@@ -17,10 +14,10 @@ import javax.annotation.Nonnull;
 public class EndScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<String> playInner(@Nonnull CosplayContext cosplayContext, @Nonnull KeelIssueRecorder<KeelEventLog> logger) {
-        String conversationCode = cosplayContext.readString(DiscussionScript.FIELD_CONVERSATION_CODE);
-        Integer conversationContextId = cosplayContext.readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
-        ConversationContext conversationContext = cosplayContext.getConversationContext(conversationContextId);
+    protected Future<Void> playInner() {
+        String conversationCode = getCurrentContext().readString(DiscussionScript.FIELD_CONVERSATION_CODE);
+        Integer conversationContextId = getCurrentContext().readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
+        ConversationContext conversationContext = getCurrentContext().getConversationContext(conversationContextId);
         Conversation conversation = conversationContext.getConversation(conversationCode);
 
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
@@ -48,7 +45,7 @@ public class EndScene extends MikuScene {
                          })
                          .compose(response -> {
                              String textContent = response.getMessage().getTextContent();
-                             logger.info("HOST Conclusion:\n" + textContent);
+                             getLogger().info("HOST Conclusion:\n" + textContent);
 
                              return Future.succeededFuture(null);
                          });

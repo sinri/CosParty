@@ -1,6 +1,6 @@
 package io.github.sinri.CosParty.miku.two;
 
-import io.github.sinri.CosParty.facade.context.conversation.Actor;
+import io.github.sinri.CosParty.kernel.context.conversation.Actor;
 import io.github.sinri.CosParty.miku.MikuEngine;
 import io.github.sinri.drydock.naval.raider.Privateer;
 import io.vertx.core.Future;
@@ -20,7 +20,7 @@ public class Discussion extends Privateer {
         script.confirmStartScene(StartScene.class);
 
         MikuEngine engine = new MikuEngine(script);
-        return engine.swift(Map.of(
+        return engine.startup(Map.of(
                 DiscussionScript.FIELD_TOPIC, "在常规体量的Java Web项目开发中，Quarkus、Javalin、Vert.x、Spring 应如何选型？",
                 DiscussionScript.FIELD_MEMBERS, new JsonArray()
                         .add(new Actor()

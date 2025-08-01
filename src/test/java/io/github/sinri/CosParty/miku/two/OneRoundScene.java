@@ -3,14 +3,11 @@ package io.github.sinri.CosParty.miku.two;
 import io.github.sinri.AiOnHttpMix.mix.chat.MixChatKit;
 import io.github.sinri.AiOnHttpMix.mix.service.NativeMixServiceAdapter;
 import io.github.sinri.AiOnHttpMix.mix.service.SupportedModelEnum;
-import io.github.sinri.CosParty.facade.context.CosplayContext;
-import io.github.sinri.CosParty.facade.context.conversation.Actor;
-import io.github.sinri.CosParty.facade.context.conversation.Conversation;
-import io.github.sinri.CosParty.facade.context.conversation.ConversationContext;
-import io.github.sinri.CosParty.facade.context.conversation.Speech;
+import io.github.sinri.CosParty.kernel.context.conversation.Actor;
+import io.github.sinri.CosParty.kernel.context.conversation.Conversation;
+import io.github.sinri.CosParty.kernel.context.conversation.ConversationContext;
+import io.github.sinri.CosParty.kernel.context.conversation.Speech;
 import io.github.sinri.CosParty.miku.MikuScene;
-import io.github.sinri.keel.logger.event.KeelEventLog;
-import io.github.sinri.keel.logger.issue.recorder.KeelIssueRecorder;
 import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
@@ -22,10 +19,10 @@ import static io.github.sinri.keel.facade.KeelInstance.Keel;
 public class OneRoundScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<String> playInner(@Nonnull CosplayContext cosplayContext, @Nonnull KeelIssueRecorder<KeelEventLog> logger) {
-        String conversationCode = cosplayContext.readString(DiscussionScript.FIELD_CONVERSATION_CODE);
-        Integer conversationContextId = cosplayContext.readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
-        ConversationContext conversationContext = cosplayContext.getConversationContext(conversationContextId);
+    protected Future<Void> playInner() {
+        String conversationCode = getCurrentContext().readString(DiscussionScript.FIELD_CONVERSATION_CODE);
+        Integer conversationContextId = getCurrentContext().readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
+        ConversationContext conversationContext = getCurrentContext().getConversationContext(conversationContextId);
 
         Conversation conversation = conversationContext.getConversation(conversationCode);
         List<Actor> actors = conversationContext.getActors();
@@ -65,7 +62,7 @@ public class OneRoundScene extends MikuScene {
                                         })
                                         .compose(response -> {
                                             String textContent = response.getMessage().getTextContent();
-                                            logger.info("As " + actor.getActorName() + ": \n" + textContent);
+                                            getLogger().info("As " + actor.getActorName() + ": \n" + textContent);
 
                                             conversation.addSpeech(new Speech().setActorName(actor.getActorName())
                                                                                .setContent(textContent));
@@ -73,10 +70,10 @@ public class OneRoundScene extends MikuScene {
                                         });
                    })
                    .compose(oneRoundOver -> {
-                       Integer roundCount = cosplayContext.readInteger(DiscussionScript.FIELD_ROUND_COUNT);
-                       cosplayContext.writeNumber(DiscussionScript.FIELD_ROUND_COUNT, Objects.requireNonNullElse(roundCount, 0) + 1);
+                       Integer roundCount = getCurrentContext().readInteger(DiscussionScript.FIELD_ROUND_COUNT);
+                       getCurrentContext().writeNumber(DiscussionScript.FIELD_ROUND_COUNT, Objects.requireNonNullElse(roundCount, 0) + 1);
 
-                       return Future.succeededFuture(AfterOneRoundScene.class.getName());
+                       return Future.succeededFuture();
                    });
     }
 }

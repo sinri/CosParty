@@ -1,4 +1,4 @@
-package io.github.sinri.CosParty.facade.context.conversation;
+package io.github.sinri.CosParty.kernel.context.conversation;
 
 import io.github.sinri.keel.core.json.JsonifiableEntity;
 import io.vertx.core.json.JsonArray;
@@ -19,6 +19,9 @@ import java.util.UUID;
  * 便于数据的持久化存储和网络传输。
  * <p>
  * 线程安全：该类不是线程安全的，在多线程环境下使用时需要外部同步。
+ *
+ * @see ConversationContext 对话上下文
+ * @since 1.0
  */
 public class Conversation implements JsonifiableEntity<Conversation> {
     /**
@@ -26,7 +29,7 @@ public class Conversation implements JsonifiableEntity<Conversation> {
      */
     @Nonnull
     private final List<Speech> speechList;
-    
+
     /**
      * 对话的唯一标识代码，用于区分不同的对话
      */
@@ -44,7 +47,7 @@ public class Conversation implements JsonifiableEntity<Conversation> {
 
     /**
      * 获取对话的唯一标识代码
-     * 
+     *
      * @return 对话代码字符串
      */
     public String getConversationCode() {
@@ -55,7 +58,7 @@ public class Conversation implements JsonifiableEntity<Conversation> {
      * 向对话中添加一个新的发言
      * <p>
      * 发言会被添加到发言列表的末尾，保持时间顺序
-     * 
+     *
      * @param speech 要添加的发言，不能为null
      * @return 当前对话实例，支持链式调用
      * @throws IllegalArgumentException 如果speech为null
@@ -69,7 +72,7 @@ public class Conversation implements JsonifiableEntity<Conversation> {
      * 获取对话中所有发言的可迭代对象
      * <p>
      * 返回的迭代器按照发言的时间顺序进行遍历
-     * 
+     *
      * @return 发言列表的可迭代对象
      */
     public Iterable<Speech> getIterableOfSpeechList() {
@@ -80,7 +83,7 @@ public class Conversation implements JsonifiableEntity<Conversation> {
      * 将对话对象序列化为JSON格式
      * <p>
      * 包含对话代码和所有发言的JSON表示
-     * 
+     *
      * @return 包含对话数据的JSON对象
      */
     @Nonnull
@@ -94,30 +97,26 @@ public class Conversation implements JsonifiableEntity<Conversation> {
 
     /**
      * 从JSON对象中重新加载对话数据
-     * <p>
-     * 创建一个新的对话实例，并从提供的JSON对象中恢复所有数据
-     * 
-     * @param jsonObject 包含对话数据的JSON对象，不能为null
-     * @return 新创建的对话实例
-     * @throws IllegalArgumentException 如果JSON格式不正确或缺少必要字段
+     *
+     * @param jsonObject 参照{@link Conversation#toJsonObject()}的返回结果
      */
     @Nonnull
     @Override
     public Conversation reloadDataFromJsonObject(@Nonnull JsonObject jsonObject) {
-        var c = new Conversation();
-        c.conversationCode = (jsonObject.getString("conversation_code"));
+        this.conversationCode = (jsonObject.getString("conversation_code"));
+        this.speechList.clear();
         JsonArray array = jsonObject.getJsonArray("speech_list");
         array.forEach(item -> {
             var o = ((JsonObject) item);
             Speech speech = new Speech().reloadDataFromJsonObject(o);
-            c.addSpeech(speech);
+            this.addSpeech(speech);
         });
-        return c;
+        return this;
     }
 
     /**
      * 获取当前对话实例的实现对象
-     * 
+     *
      * @return 当前对话实例
      */
     @Nonnull
@@ -130,7 +129,7 @@ public class Conversation implements JsonifiableEntity<Conversation> {
      * 返回对话的字符串表示
      * <p>
      * 使用JSON格式表示对话内容
-     * 
+     *
      * @return 对话的JSON字符串表示
      */
     @Override

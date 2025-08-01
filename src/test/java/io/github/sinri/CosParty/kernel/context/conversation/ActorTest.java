@@ -1,4 +1,4 @@
-package io.github.sinri.CosParty.facade.context.conversation;
+package io.github.sinri.CosParty.kernel.context.conversation;
 
 import io.github.sinri.keel.facade.tesuto.unit.KeelUnitTest;
 import io.vertx.core.json.JsonArray;

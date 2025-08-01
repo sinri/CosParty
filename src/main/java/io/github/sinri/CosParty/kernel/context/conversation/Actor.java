@@ -1,4 +1,4 @@
-package io.github.sinri.CosParty.facade.context.conversation;
+package io.github.sinri.CosParty.kernel.context.conversation;
 
 import io.github.sinri.keel.core.json.JsonifiableEntity;
 import io.vertx.core.json.JsonObject;
@@ -6,22 +6,17 @@ import io.vertx.core.json.JsonObject;
 import javax.annotation.Nonnull;
 
 /**
- * 在一个{@link ConversationContext}下通用的在AI大模型下运作的角色。
- * 
- * <p>本类定义了对话系统中参与对话的角色，每个角色具有唯一的名称和特定的行为指令。
- * 角色可以在多个{@link Conversation}中参与对话，通过{@link Speech}发表内容。
- * 
- * <p>角色信息包括：
- * <ul>
- *   <li><strong>角色名称</strong>：用于标识角色的唯一标识符，在对话中用于区分不同角色的发言</li>
- *   <li><strong>角色指令</strong>：描述角色的行为模式、性格特征或特定任务的指令，用于指导AI模型模拟该角色的行为</li>
- * </ul>
- * 
- * <p>本类实现了{@link JsonifiableEntity}接口，支持序列化和反序列化，便于存储和传输角色信息。
- * 
- * @see ConversationContext 对话上下文，管理角色和对话
- * @see Conversation 对话，包含多个发言
- * @see Speech 发言，记录角色的具体发言内容
+ * 本类定义了在AI大模型对话场景下被赋予身份的角色。
+ * <p>
+ * 一个角色具有唯一的名称，并被赋予特定的行为指令用于指导AI模型模拟该角色的行为。
+ * 一个角色应在一个{@link ConversationContext}内注册存在，在其下多个{@link Conversation}中参与对话，对话内容由{@link Speech}封装。
+ * <p>
+ * 本类实现了{@link JsonifiableEntity}接口，支持序列化和反序列化，便于存储和传输角色信息。
+ *
+ * @see ConversationContext 对话上下文
+ * @see Conversation 对话
+ * @see Speech 特定角色的一次发言
+ * @since 1.0
  */
 public class Actor implements JsonifiableEntity<Actor> {
     /**
@@ -29,7 +24,7 @@ public class Actor implements JsonifiableEntity<Actor> {
      * 用于在对话中区分不同角色，并在{@link Speech}中标识发言者。
      */
     private String actorName;
-    
+
     /**
      * 角色的行为指令或描述。
      * 包含角色的性格特征、行为模式、专业领域等信息，
@@ -39,7 +34,7 @@ public class Actor implements JsonifiableEntity<Actor> {
 
     /**
      * 获取角色名称。
-     * 
+     *
      * @return 角色的唯一标识名称
      */
     public String getActorName() {
@@ -48,7 +43,7 @@ public class Actor implements JsonifiableEntity<Actor> {
 
     /**
      * 设置角色名称。
-     * 
+     *
      * @param actorName 角色的唯一标识名称
      * @return 当前Actor实例，支持链式调用
      */
@@ -59,7 +54,7 @@ public class Actor implements JsonifiableEntity<Actor> {
 
     /**
      * 获取角色指令。
-     * 
+     *
      * @return 角色的行为指令或描述
      */
     public String getActorInstruction() {
@@ -68,7 +63,7 @@ public class Actor implements JsonifiableEntity<Actor> {
 
     /**
      * 设置角色指令。
-     * 
+     *
      * @param actorInstruction 角色的行为指令或描述
      * @return 当前Actor实例，支持链式调用
      */
@@ -79,13 +74,13 @@ public class Actor implements JsonifiableEntity<Actor> {
 
     /**
      * 将Actor对象序列化为JSON格式。
-     * 
+     *
      * <p>序列化后的JSON包含以下字段：
      * <ul>
      *   <li><code>actor_name</code>：角色名称</li>
      *   <li><code>actor_instruction</code>：角色指令</li>
      * </ul>
-     * 
+     *
      * @return 包含Actor信息的JSON对象
      */
     @Nonnull
@@ -98,30 +93,21 @@ public class Actor implements JsonifiableEntity<Actor> {
     }
 
     /**
-     * 从JSON对象反序列化创建Actor实例。
-     * 
-     * <p>期望的JSON格式应包含以下字段：
-     * <ul>
-     *   <li><code>actor_name</code>：角色名称</li>
-     *   <li><code>actor_instruction</code>：角色指令</li>
-     * </ul>
-     * 
-     * @param jsonObject 包含Actor信息的JSON对象
-     * @return 新创建的Actor实例
+     * 从JSON对象反序列化重载Actor实例。
+     *
+     * @param jsonObject 包含Actor信息的JSON对象，参照{@link Actor#toJsonObject()}的返回结果
      * @throws IllegalArgumentException 如果JSON格式不正确或缺少必要字段
      */
     @Nonnull
     @Override
     public Actor reloadDataFromJsonObject(@Nonnull JsonObject jsonObject) {
-        return new Actor()
-                .setActorName(jsonObject.getString("actor_name"))
-                .setActorInstruction(jsonObject.getString("actor_instruction"))
-                ;
+        return this.setActorName(jsonObject.getString("actor_name"))
+                   .setActorInstruction(jsonObject.getString("actor_instruction"));
     }
 
     /**
      * 获取当前Actor实例。
-     * 
+     *
      * @return 当前Actor实例
      */
     @Nonnull
@@ -132,7 +118,7 @@ public class Actor implements JsonifiableEntity<Actor> {
 
     /**
      * 返回Actor的字符串表示。
-     * 
+     *
      * @return Actor的JSON格式字符串表示
      */
     @Override
