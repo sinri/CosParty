@@ -1,29 +1,23 @@
 package io.github.sinri.CosParty.kernel.context.conversation;
 
 import io.github.sinri.keel.core.json.JsonifiableDataUnit;
-import io.github.sinri.keel.core.json.JsonifiableEntity;
 import io.vertx.core.json.JsonObject;
 
 import javax.annotation.Nonnull;
 
 /**
- * 在一个{@link Conversation}内的一个发言记录，即由特定的角色发表一段内容。
+ * 对话中的发言记录。
  * <p>
- * 该类实现了 {@link JsonifiableEntity} 接口，支持 JSON 序列化和反序列化操作。
- *
- * @see Conversation
- * @see DynamicActor
- * @since 1.0
+ * 由特定角色发表的一段内容。
  */
 public class Speech implements JsonifiableDataUnit {
     /**
-     * 发言角色的名称，与 {@link DynamicActor#getActorName()} 返回值保持一致。
-     * 在序列化时使用 "actor_name" 作为 JSON 键名。
+     * 发言角色的名称。
      */
     private String actorName;
 
     /**
-     * 角色发表的内容。在序列化时使用 "content" 作为 JSON 键名。
+     * 角色发表的内容。
      */
     private String content;
 
@@ -40,7 +34,7 @@ public class Speech implements JsonifiableDataUnit {
      * 设置发言角色的名称。
      *
      * @param actorName 发言角色的名称
-     * @return 当前 Speech 实例，支持链式调用
+     * @return 当前 Speech 实例
      */
     public Speech setActorName(String actorName) {
         this.actorName = actorName;
@@ -60,7 +54,7 @@ public class Speech implements JsonifiableDataUnit {
      * 设置发言内容。
      *
      * @param content 角色发表的文本内容
-     * @return 当前 Speech 实例，支持链式调用
+     * @return 当前 Speech 实例
      */
     public Speech setContent(String content) {
         this.content = content;
@@ -69,8 +63,6 @@ public class Speech implements JsonifiableDataUnit {
 
     /**
      * 将当前发言记录转换为 JSON 对象。
-     * <p>
-     * JSON 结构：{"actor_name": "角色名称", "content": "发言内容"}
      *
      * @return 包含发言记录数据的 JSON 对象
      */
@@ -86,7 +78,7 @@ public class Speech implements JsonifiableDataUnit {
     /**
      * 从 JSON 对象重新加载发言记录数据。
      *
-     * @param jsonObject 参照{@link Speech#toJsonObject()}的返回结果
+     * @param jsonObject 包含发言信息的JSON对象
      */
     @Override
     public void reloadData(@Nonnull JsonObject jsonObject) {

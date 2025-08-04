@@ -70,12 +70,10 @@ class CosplayContextOnMemory implements CosplayContext {
      *
      * @param key   数据键，不能为null
      * @param value 字符串值，不能为null
-     * @return 当前上下文实例，支持链式调用
      */
     @Override
-    public CosplayContext writeString(@Nonnull String key, @Nonnull String value) {
+    public void writeString(@Nonnull String key, @Nonnull String value) {
         contextMap.put(key, value);
-        return this;
     }
 
     /**

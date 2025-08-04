@@ -11,6 +11,14 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Miku场景抽象基类。
+ * <p>
+ * 提供场景的基本实现，包括实例管理、日志记录和上下文访问功能。
+ * 子类需要实现具体的业务逻辑。
+ * <p>
+ * 在Miku实现中，一个场景类的唯一标识为其类的唯一名称，因而只能对应一个场景实例。
+ */
 public abstract class MikuScene implements CosplayScene {
     private final String instanceId;
     private KeelIssueRecorder<KeelEventLog> logger;
@@ -42,6 +50,11 @@ public abstract class MikuScene implements CosplayScene {
         return Future.succeededFuture();
     }
 
+    /**
+     * 获取场景专用的日志记录器。
+     *
+     * @return 日志记录器实例
+     */
     protected KeelIssueRecorder<KeelEventLog> getLogger() {
         Objects.requireNonNull(logger);
         return logger;
@@ -54,9 +67,19 @@ public abstract class MikuScene implements CosplayScene {
         return playInner();
     }
 
+    /**
+     * 执行场景的核心业务逻辑。
+     * <p>
+     * 子类必须实现此方法来提供具体的场景执行逻辑。
+     */
     @Nonnull
     abstract protected Future<Void> playInner();
 
+    /**
+     * 获取当前场景的上下文。
+     *
+     * @return 当前上下文实例
+     */
     @Nonnull
     protected final CosplayContext getCurrentContext() {
         Objects.requireNonNull(currentContext);

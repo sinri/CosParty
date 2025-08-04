@@ -11,6 +11,12 @@ import io.vertx.core.Future;
 import javax.annotation.Nonnull;
 import java.util.*;
 
+/**
+ * Miku动作抽象基类。
+ * <p>
+ * 提供动作的基本实现，包括场景缓存、上下文管理和日志记录功能。
+ * 子类需要实现具体的业务逻辑和场景初始化。
+ */
 public abstract class MikuAction implements CosplayAction {
     private final Map<String, CosplayScene> cachedSceneMap;
     private final String instanceId;
@@ -41,6 +47,11 @@ public abstract class MikuAction implements CosplayAction {
         return actionContext;
     }
 
+    /**
+     * 为当前动作作用域构建上下文。
+     * <p>
+     * 子类必须实现此方法来提供动作专用的上下文实例。
+     */
     @Nonnull
     abstract protected CosplayContext buildContextForThisActionScope();
 
