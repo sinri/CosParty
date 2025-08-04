@@ -4,11 +4,8 @@ import io.github.sinri.CosParty.kernel.CosplayScene;
 import io.github.sinri.CosParty.kernel.CosplayScript;
 
 import javax.annotation.Nonnull;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Miku脚本抽象基类。
@@ -17,12 +14,13 @@ import java.util.Objects;
  * 支持通过包名和类名进行场景管理。
  */
 public abstract class MikuScript implements CosplayScript {
-    private final @Nonnull Map<String, CosplayScene> sceneMap;
+    private final @Nonnull Set<String> sceneCodeSet;
     private @Nonnull String startSceneCode = "";
 
     public MikuScript() {
-        sceneMap = new HashMap<>();
+        sceneCodeSet = new HashSet<>();
     }
+
 
     /**
      * 确认起始场景。
@@ -31,21 +29,10 @@ public abstract class MikuScript implements CosplayScript {
      * @return 当前脚本实例
      */
     public MikuScript confirmStartScene(@Nonnull Class<? extends MikuScene> startSceneClass) {
-        if (!this.sceneMap.containsKey(startSceneClass.getName())) {
+        if (!this.sceneCodeSet.contains(startSceneClass.getName())) {
             throw new RuntimeException("This scene code is not registered");
         }
         this.startSceneCode = startSceneClass.getName();
-        return this;
-    }
-
-    /**
-     * 添加场景到脚本中。
-     *
-     * @param scene 场景实例
-     * @return 当前脚本实例
-     */
-    private MikuScript addScene(@Nonnull CosplayScene scene) {
-        sceneMap.put(scene.getSceneCode(), scene);
         return this;
     }
 
@@ -56,51 +43,25 @@ public abstract class MikuScript implements CosplayScript {
      * @return 当前脚本实例
      */
     public MikuScript addScene(@Nonnull Class<? extends CosplayScene> sceneClass) {
-        if (sceneMap.containsKey(sceneClass.getName())) {
+        if (sceneCodeSet.contains(sceneClass.getName())) {
             throw new IllegalArgumentException("already exists");
         }
-        CosplayScene scene = loadSceneByCode(sceneClass.getName());
-        sceneMap.put(scene.getSceneCode(), scene);
+        sceneCodeSet.add(sceneClass.getName());
         return this;
     }
 
     @Nonnull
     @Override
     public CosplayScene getStartingScene() {
-        var startingScene = this.sceneMap.get(startSceneCode);
-        Objects.requireNonNull(startingScene);
-        return startingScene;
+        return this.getSceneByCodeInScript(startSceneCode);
     }
 
     @Nonnull
     @Override
     public CosplayScene getSceneByCodeInScript(@Nonnull String sceneCode) {
-        if (!sceneMap.containsKey(sceneCode)) {
+        if (!sceneCodeSet.contains(sceneCode)) {
             throw new IllegalArgumentException("Scene Code [%s] not found".formatted(sceneCode));
         }
-        return sceneMap.get(sceneCode);
-    }
-
-    /**
-     * 通过场景代码动态加载场景实例。
-     *
-     * @param sceneCode 场景代码
-     * @return 场景实例
-     */
-    private CosplayScene loadSceneByCode(@Nonnull String sceneCode) {
-        String className = sceneCode;
-
-        try {
-            Class<?> aClass = Class.forName(className);
-            Constructor<?> constructor = aClass.getConstructor();
-            Object o = constructor.newInstance();
-            if (o instanceof CosplayScene) {
-                return (CosplayScene) o;
-            }
-            throw new RuntimeException("Class is not " + CosplayScene.class.getName());
-        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                 InvocationTargetException e) {
-            throw new RuntimeException("Scene Code [%s] Error: %s".formatted(sceneCode, e.getMessage()), e);
-        }
+        return MikuEngine.loadSceneByCode(sceneCode, CosplayScene.class);
     }
 }

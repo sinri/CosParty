@@ -31,13 +31,14 @@ public class DebateAction extends MikuAction {
         super();
     }
 
+
     @Override
-    protected List<CosplayScene> initializeRelatedScenes() {
-        List<CosplayScene> list = new ArrayList<>();
-        list.add(new DebateStartScene());
-        list.add(new OneRoundScene());
-        list.add(new AfterOneRoundScene());
-        list.add(new DebateEndScene());
+    protected List<Class<? extends CosplayScene>> initializeRelatedScenes() {
+        List<Class<? extends CosplayScene>> list = new ArrayList<>();
+        list.add(DebateStartScene.class);
+        list.add(OneRoundScene.class);
+        list.add(AfterOneRoundScene.class);
+        list.add(DebateEndScene.class);
         return list;
     }
 

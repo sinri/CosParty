@@ -18,7 +18,8 @@ import java.util.*;
  * 子类需要实现具体的业务逻辑和场景初始化。
  */
 public abstract class MikuAction implements CosplayAction {
-    private final Map<String, CosplayScene> cachedSceneMap;
+    // private final Map<String, CosplayScene> cachedSceneMap;
+    private final Set<String> sceneCodeSet;
     private final String instanceId;
     private CosplayContext actionContext;
     private KeelIssueRecorder<KeelEventLog> logger;
@@ -26,9 +27,9 @@ public abstract class MikuAction implements CosplayAction {
     public MikuAction() {
         super();
 
-        this.cachedSceneMap = new HashMap<>();
+        this.sceneCodeSet = new HashSet<>();
         initializeRelatedScenes().forEach(scene -> {
-            this.cachedSceneMap.put(scene.getSceneCode(), scene);
+            this.sceneCodeSet.add(scene.getName());
         });
 
         this.instanceId = getSceneCode() + ":" + UUID.randomUUID();
@@ -38,7 +39,7 @@ public abstract class MikuAction implements CosplayAction {
      * 构建一个列表，包含Action内涉及的所有Scene的实例。
      * 在本类的构造方法中运行。
      */
-    abstract protected List<CosplayScene> initializeRelatedScenes();
+    abstract protected List<Class<? extends CosplayScene>> initializeRelatedScenes();
 
     @Nonnull
     @Override
@@ -70,10 +71,10 @@ public abstract class MikuAction implements CosplayAction {
     @Nonnull
     @Override
     public final CosplayScene getSceneByCodeInAction(@Nonnull String nextSceneCodeInAction) {
-        if (!this.cachedSceneMap.containsKey(nextSceneCodeInAction)) {
+        if (!this.sceneCodeSet.contains(nextSceneCodeInAction)) {
             throw new IllegalArgumentException("Scene Code [%s] not found".formatted(nextSceneCodeInAction));
         }
-        return cachedSceneMap.get(nextSceneCodeInAction);
+        return MikuEngine.loadSceneByCode(nextSceneCodeInAction, CosplayScene.class);
     }
 
     /**
