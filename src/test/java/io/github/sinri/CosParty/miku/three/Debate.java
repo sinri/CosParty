@@ -4,8 +4,6 @@ import io.github.sinri.CosParty.miku.MikuEngine;
 import io.github.sinri.drydock.naval.raider.Privateer;
 import io.vertx.core.Future;
 
-import java.util.Map;
-
 public class Debate extends Privateer {
     @Override
     protected Future<Void> launchAsPrivateer() {

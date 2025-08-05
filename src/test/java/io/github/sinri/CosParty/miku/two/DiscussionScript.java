@@ -5,7 +5,6 @@ import io.github.sinri.CosParty.miku.MikuScript;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.function.Function;
 
 public class DiscussionScript extends MikuScript implements DiscussionContextMixin {
 

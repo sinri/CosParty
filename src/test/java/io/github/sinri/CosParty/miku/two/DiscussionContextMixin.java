@@ -7,6 +7,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
+/**
+ * 本类展示了一种在scene里使用context的实现方式，即将读写context的逻辑封装在mixin里，在scene类里实现mixin接口。
+ * 这样scene类里可以直接调用mixin的方法，而不是直接调用context的方法。
+ */
 public interface DiscussionContextMixin {
     public static final String FIELD_TOPIC = "topic";
     public static final String FIELD_MEMBERS = "members";
@@ -49,11 +53,6 @@ public interface DiscussionContextMixin {
     @Nullable
     default String conversationCode() {
         return this.context().readString(FIELD_CONVERSATION_CODE);
-    }
-
-    @Deprecated
-    private void roundCount(int round_count) {
-        this.context().writeNumber(FIELD_ROUND_COUNT, round_count);
     }
 
     default void increaseRoundCount() {
