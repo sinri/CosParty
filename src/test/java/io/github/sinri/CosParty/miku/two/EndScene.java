@@ -10,21 +10,23 @@ import io.github.sinri.CosParty.miku.MikuScene;
 import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
-public class EndScene extends MikuScene {
+public class EndScene extends MikuScene implements DiscussionContextMixin {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        String conversationCode = getCurrentContext().readString(DiscussionScript.FIELD_CONVERSATION_CODE);
-        Integer conversationContextId = getCurrentContext().readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
-        ConversationContext conversationContext = getCurrentContext().getConversationContext(conversationContextId);
-        Conversation conversation = conversationContext.getConversation(conversationCode);
-
+    public Future<Void> play() {
+        Conversation conversation;
+        String conversationCode = conversationCode();
+        Integer conversationContextId = conversationContextId();
+        Objects.requireNonNull(conversationContextId);
+        ConversationContext conversationContext = context().getConversationContext(conversationContextId);
+        conversation = conversationContext.getConversation(conversationCode);
+        Objects.requireNonNull(conversation);
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
         MixChatKit mixChatKit = MixChatKit.create(adapter);
 
         return mixChatKit.chatStream(SupportedModelEnum.QwenMax, req -> {
-
                              Iterable<Speech> iterableOfSpeechList = conversation.getIterableOfSpeechList();
                              StringBuilder history = new StringBuilder();
                              history.append("至今为止的讨论发言记录如下：\n");

@@ -1,275 +1,201 @@
-# 使用 CosParty 构建 AI 工作流 - 初音未来问答系统案例
+# CosParty 初音未来问答系统使用指南
 
-## 案例介绍
+## 示例功能概述
 
-本案例展示如何使用 CosParty 第三方库构建一个初音未来（Hatsune Miku）角色扮演问答系统。用户提问后，系统会：
-1. 以初音未来的身份用日语回答
-2. 对回答进行语法检查和中文翻译
+本示例实现了一个基于 CosParty 框架的初音未来角色扮演问答系统。系统工作流程如下：
 
-通过这个具体案例，你将学会如何使用 CosParty 的核心概念来构建自己的 AI 工作流。
+1. **用户提问** → 系统接收用户的中文问题
+2. **初音回答** → 以初音未来身份用日语回答用户问题  
+3. **语法检查与翻译** → 对日语回答进行语法检查并翻译成中文
+4. **输出结果** → 返回最终的中文翻译结果
 
-## 核心概念解析
+## 框架核心机制
 
-### 什么是 CosParty？
+### 1. 三层架构设计
 
-CosParty 是一个用于构建 AI 工作流的 Java 框架，它将复杂的工作流分解为多个**场景（Scene）**，每个场景负责特定的业务逻辑，场景之间通过**上下文（Context）**进行数据传递。
+CosParty 采用三层架构来组织 AI 工作流：
 
-### 核心实体关系
+- **引擎层（MikuEngine）**：负责执行整个工作流，管理场景生命周期
+- **脚本层（MikuScript）**：定义场景执行顺序和跳转逻辑
+- **场景层（MikuScene）**：实现具体的业务逻辑单元
 
-```
-MikuEngine (引擎)
-    ↓ 执行
-MikuScript (脚本) 
-    ↓ 编排
-MikuScene (场景) 
-    ↓ 传递数据
-CosplayContext (上下文)
-```
+### 2. 场景驱动机制
 
-## 案例实现详解
+每个场景都是一个独立的业务逻辑单元，具有以下特点：
 
-### 第一步：创建入口类
+- **单一职责**：每个场景只负责一个特定的功能
+- **数据传递**：通过上下文对象在场景间传递数据
+- **动态跳转**：支持条件跳转和顺序执行
+- **生命周期管理**：引擎自动管理场景的创建、初始化和销毁
+
+### 3. 上下文数据管理
+
+使用 `CosplayContext` 对象在场景间传递数据：
+
+- 支持字符串、数字、布尔值等基本类型
+- 数据在整个工作流生命周期内保持有效
+- 提供类型安全的读写操作
+
+## 实现要点
+
+### 1. 场景类设计
+
+每个场景类必须：
+- 继承 `MikuScene` 基类
+- 实现无参构造函数
+- 重写 `playInner()` 方法实现业务逻辑
+- 通过 `getCurrentContext()` 访问上下文
+- 通过 `getLogger()` 记录日志
+
+### 2. 脚本类设计
+
+脚本类需要：
+- 继承 `MikuScript` 基类
+- 在构造函数中注册所有场景
+- 设置起始场景
+- 实现 `seekNextSceneInScript()` 方法定义跳转逻辑
+
+### 3. 引擎启动
+
+通过 `MikuEngine` 启动工作流：
+- 创建脚本实例
+- 创建引擎实例
+- 调用 `startup()` 方法并传入初始参数
+
+## 关键机制详解
+
+### 1. 场景注册机制
+
+场景必须在脚本中显式注册才能被使用：
 
 ```java
-public class MikuShow extends Privateer {
-    @Override
-    protected Future<Void> launchAsPrivateer() {
-        // 1. 创建脚本，定义工作流
-        MikuScript mikuScript = new MikuScript();
-        mikuScript.addScene(SceneStart.class);
-        mikuScript.addScene(SceneJudge.class);
-        mikuScript.confirmStartScene(SceneStart.class);
+this.addScene(SceneStart.class);
+this.addScene(SceneJudge.class);
+```
 
-        // 2. 创建引擎并执行
-        MikuEngine engine = new MikuEngine(mikuScript);
-        return engine.swift(Map.of("raw_question", "千本樱这个歌是讲什么东西的，里面有什么典型片段"));
-    }
+**注意事项**：
+- 未注册的场景无法被引擎加载
+- 场景类名作为唯一标识符
+- 重复注册会抛出异常
+
+### 2. 场景跳转控制
+
+通过 `seekNextSceneInScript()` 方法控制场景跳转：
+
+```java
+if (currentSceneCode.equals(SceneStart.class.getName())) {
+    return SceneJudge.class.getName();
+} else if (currentSceneCode.equals(SceneJudge.class.getName())) {
+    return null; // 结束工作流
 }
 ```
 
-**关键概念解释：**
-- `MikuScript`：工作流脚本，定义场景顺序和起始场景
-- `MikuEngine`：执行引擎，负责按脚本编排执行各个场景
-- `engine.swift()`：启动工作流，传入初始参数
+**注意事项**：
+- 返回 `null` 表示工作流结束
+- 返回的场景类名必须在脚本中已注册
+- 未处理的场景代码会抛出异常
 
-### 第二步：实现场景类
+### 3. 上下文数据操作
 
-#### SceneStart - 第一个场景
+场景间通过上下文传递数据：
 
 ```java
-class SceneStart extends MikuScene {
-    @Override
-    protected Future<String> playInner(
-            CosplayContext cosplayContext, 
-            KeelIssueRecorder<KeelEventLog> logger
-    ) {
-        // 1. 读取输入参数
-        var rawQuestion = cosplayContext.readString("raw_question");
-        
-        // 2. 调用 AI 服务
-        NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
-        MixChatKit mixChatKit = MixChatKit.create(adapter);
-        
-        return mixChatKit.chatStream(
-                SupportedModelEnum.QwenPlus,
-                req -> req
-                        .addMessage(msg -> msg
-                                .setRole("system")
-                                .setTextContent("You are Hatsune Miku. Answer the questions from your fans in Japanese.")
-                        )
-                        .addMessage(msg -> msg
-                                .setRole("user")
-                                .setTextContent(rawQuestion)
-                        )
-        )
-        .compose(resp -> {
-            // 3. 处理结果并存储到上下文
-            String textContent = resp.getMessage().getTextContent();
-            cosplayContext.writeString("first_answer", textContent);
-            logger.info("first_answer: " + textContent);
-            
-            // 4. 返回下一个场景类名
-            return Future.succeededFuture(SceneJudge.class.getName());
-        });
-    }
+// 写入数据
+getCurrentContext().writeString("first_answer", textContent);
+
+// 读取数据  
+var firstAnswer = getCurrentContext().readString("first_answer");
+```
+
+**注意事项**：
+- 读取不存在的键会抛出异常
+- 数据类型必须匹配
+- 数据在整个工作流中保持有效
+
+## 常见陷阱与解决方案
+
+### 1. 场景注册陷阱
+
+**问题**：忘记注册场景导致运行时异常
+```java
+// 错误：未注册场景
+this.addScene(SceneStart.class);
+// 忘记注册 SceneJudge.class
+```
+
+**解决**：确保所有场景都在构造函数中注册
+
+### 2. 跳转逻辑陷阱
+
+**问题**：跳转逻辑不完整导致异常
+```java
+// 错误：未处理所有场景
+if (currentSceneCode.equals(SceneStart.class.getName())) {
+    return SceneJudge.class.getName();
 }
+// 缺少 SceneJudge 的处理逻辑
 ```
 
-**关键概念解释：**
-- `MikuScene`：场景基类，所有场景都必须继承此类
-- `playInner()`：场景的核心逻辑方法
-- `CosplayContext`：上下文对象，用于场景间数据传递
-- `cosplayContext.readString()`：读取上一个场景传递的数据
-- `cosplayContext.writeString()`：将数据存储到上下文，供下一个场景使用
-- 返回值：返回下一个场景的类名，实现场景跳转
+**解决**：为每个场景提供明确的跳转逻辑
 
-#### SceneJudge - 第二个场景
+### 3. 数据传递陷阱
 
+**问题**：读取未写入的数据
 ```java
-class SceneJudge extends MikuScene {
-    @Override
-    protected Future<String> playInner(
-            CosplayContext cosplayContext, 
-            KeelIssueRecorder<KeelEventLog> logger
-    ) {
-        // 1. 读取上一个场景的结果
-        var firstAnswer = cosplayContext.readString("first_answer");
-        
-        // 2. 调用 AI 服务进行语法检查和翻译
-        NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
-        MixChatKit mixChatKit = MixChatKit.create(adapter);
-        
-        return mixChatKit.chatStream(
-                SupportedModelEnum.QwenPlus,
-                req -> req
-                        .addMessage(msg -> msg
-                                .setRole("system")
-                                .setTextContent("根据用户的输入，检查语法并翻译成中文")
-                        )
-                        .addMessage(msg -> msg
-                                .setRole("user")
-                                .setTextContent(firstAnswer)
-                        )
-        )
-        .compose(resp -> {
-            // 3. 处理最终结果
-            String textContent = resp.getMessage().getTextContent();
-            logger.info("second_answer: " + textContent);
-            cosplayContext.writeString("second_answer", textContent);
-            
-            // 4. 返回 null 表示工作流结束
-            return Future.succeededFuture(null);
-        });
-    }
-}
+// 错误：在 SceneJudge 中读取 first_answer，但 SceneStart 可能失败
+var firstAnswer = getCurrentContext().readString("first_answer");
 ```
 
-**关键概念解释：**
-- 返回 `null`：表示工作流结束，不再跳转到下一个场景
-- 数据流转：`raw_question` → `first_answer` → `second_answer`
+**解决**：添加数据存在性检查或异常处理
 
-## 如何构建自己的工作流
+### 4. 异步操作陷阱
 
-### 1. 设计工作流步骤
-
-首先明确你的业务需求，将复杂流程分解为多个独立步骤：
-
-```
-用户输入 → 步骤1 → 步骤2 → ... → 最终结果
-```
-
-### 2. 创建场景类
-
-为每个步骤创建一个继承 `MikuScene` 的类：
-
+**问题**：在异步操作中访问上下文
 ```java
-public class YourScene extends MikuScene {
-    @Override
-    protected Future<String> playInner(
-            CosplayContext cosplayContext, 
-            KeelIssueRecorder<KeelEventLog> logger
-    ) {
-        // 1. 读取输入
-        String input = cosplayContext.readString("input_key");
-        
-        // 2. 执行业务逻辑
-        String result = processYourBusinessLogic(input);
-        
-        // 3. 存储结果
-        cosplayContext.writeString("output_key", result);
-        
-        // 4. 返回下一个场景类名或 null
-        return Future.succeededFuture(NextScene.class.getName());
-    }
-}
+// 错误：在异步回调中直接访问上下文
+return mixChatKit.chatStream(...)
+    .compose(resp -> {
+        // 这里的上下文可能已经失效
+        getCurrentContext().writeString("result", resp.getMessage().getTextContent());
+        return Future.succeededFuture();
+    });
 ```
 
-### 3. 组装工作流
-
-```java
-// 创建脚本
-MikuScript script = new MikuScript();
-script.addScene(Step1Scene.class);
-script.addScene(Step2Scene.class);
-script.addScene(Step3Scene.class);
-script.confirmStartScene(Step1Scene.class);
-
-// 创建引擎
-MikuEngine engine = new MikuEngine(script);
-
-// 执行工作流
-engine.swift(Map.of("initial_param", "initial_value"));
-```
-
-### 4. 数据传递模式
-
-CosParty 支持多种数据传递方式：
-
-```java
-// 字符串
-cosplayContext.writeString("key", "value");
-String value = cosplayContext.readString("key");
-
-// 数字
-cosplayContext.writeInteger("count", 42);
-Integer count = cosplayContext.readInteger("count");
-
-// 布尔值
-cosplayContext.writeBoolean("flag", true);
-Boolean flag = cosplayContext.readBoolean("flag");
-
-// 对象（需要序列化）
-cosplayContext.writeString("json_data", objectMapper.writeValueAsString(obj));
-```
+**解决**：在异步操作前保存必要的数据
 
 ## 最佳实践
 
 ### 1. 场景设计原则
 
-- **单一职责**：每个场景只负责一个特定的业务逻辑
-- **数据明确**：明确定义场景间的数据传递接口
-- **错误处理**：在场景中处理可能的异常情况
+- **职责单一**：每个场景只做一件事
+- **数据明确**：明确定义输入输出数据
+- **错误处理**：在场景中处理可能的异常
+- **日志记录**：记录关键操作和错误信息
 
-### 2. 命名规范
+### 2. 脚本设计原则
 
-- 场景类名：`功能名 + Scene`，如 `UserLoginScene`
-- 上下文键名：使用下划线分隔，如 `user_id`、`login_result`
+- **逻辑清晰**：跳转逻辑要简单明确
+- **场景完整**：确保所有场景都被正确处理
+- **异常安全**：处理异常情况下的跳转
 
-### 3. 日志记录
+### 3. 数据管理原则
 
-```java
-// 记录关键信息
-logger.info("Processing user input: " + input);
-
-// 记录错误
-logger.error("Failed to process request", exception);
-```
-
-### 4. 场景跳转控制
-
-```java
-// 条件跳转
-if (condition) {
-    return Future.succeededFuture(SceneA.class.getName());
-} else {
-    return Future.succeededFuture(SceneB.class.getName());
-}
-
-// 结束工作流
-return Future.succeededFuture(null);
-```
+- **命名规范**：使用有意义的键名
+- **类型一致**：保持数据类型的一致性
+- **生命周期**：考虑数据的生命周期管理
 
 ## 运行示例
 
 ```bash
-# 在项目根目录执行
+# 在项目根目录执行测试
 mvn test -Dtest=MikuShow
 ```
 
-## 扩展阅读
+## 扩展建议
 
-- 查看 `src/main/java/io/github/sinri/CosParty/miku/` 目录了解核心类实现
-- 参考 `src/test/java/io/github/sinri/CosParty/miku/two/` 目录查看更复杂的工作流示例
-- 探索 `src/main/java/io/github/sinri/CosParty/facade/` 目录了解框架的抽象层设计
+1. **添加错误处理场景**：处理 AI 服务调用失败的情况
+2. **增加条件跳转**：根据回答质量决定是否需要进一步处理
+3. **优化性能**：考虑并行执行某些场景
+4. **增强监控**：添加更详细的日志和指标收集
 
-通过这个案例，你已经学会了 CosParty 的核心概念和使用方法。现在可以开始构建你自己的 AI 工作流了！
+通过这个示例，你可以掌握 CosParty 框架的核心概念和使用方法，为构建更复杂的 AI 工作流打下基础。

@@ -4,8 +4,6 @@ import io.github.sinri.CosParty.miku.MikuEngine;
 import io.github.sinri.drydock.naval.raider.Privateer;
 import io.vertx.core.Future;
 
-import java.util.Map;
-
 public class MikuShow extends Privateer {
 
     @Override
@@ -15,9 +13,9 @@ public class MikuShow extends Privateer {
         SampleScript mikuScript = new SampleScript();
         MikuEngine engine = new MikuEngine(mikuScript);
 
-        return engine.startup(Map.of(
-                "raw_question", "千本樱这个歌是讲什么东西的，里面有什么典型片段"
-        ));
+        return engine.startup(ctx -> {
+            ctx.writeString("raw_question", "千本樱这个歌是讲什么东西的，里面有什么典型片段");
+        });
     }
 
 }

@@ -41,6 +41,10 @@ public interface CosplayContextJsonMixin extends CosplayContextCore {
         return new JsonArray(s);
     }
 
+    default void writeJsonArray(@Nonnull String key, @Nonnull JsonArray jsonArray) {
+        writeString(key, jsonArray.toString());
+    }
+
 
     /**
      * 写入JSON对象。
@@ -49,7 +53,6 @@ public interface CosplayContextJsonMixin extends CosplayContextCore {
      *
      * @param key        数据键
      * @param jsonObject JSON对象
-     * @return 当前上下文实例，支持链式调用
      */
     default void writeJsonObject(@Nonnull String key, @Nonnull JsonObject jsonObject) {
         writeString(key, jsonObject.toString());

@@ -1,5 +1,6 @@
 package io.github.sinri.CosParty.kernel;
 
+import io.github.sinri.CosParty.kernel.context.CosplayContext;
 import io.vertx.core.Future;
 
 import javax.annotation.Nonnull;
@@ -36,12 +37,24 @@ public interface CosplayScene {
     Future<Void> initialize(@Nonnull CosplayEngine engine);
 
     /**
+     * @return the runtime engine instance for this scene
+     * @throws IllegalStateException throw when this scene is not in runtime play status
+     */
+    CosplayEngine engine() throws IllegalStateException;
+
+    /**
+     * @return the runtime context for this scene on script scope
+     * @throws IllegalStateException throw when this scene is not in runtime play status
+     */
+    @Nonnull
+    CosplayContext context() throws IllegalStateException;
+
+    /**
      * 执行场景的核心业务逻辑。
      *
-     * @param engine 执行引擎实例
      * @return 执行完成的Future
      */
     @Nonnull
-    Future<Void> play(@Nonnull CosplayEngine engine);
+    Future<Void> play();
 
 }

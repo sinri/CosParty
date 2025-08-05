@@ -9,8 +9,8 @@ import javax.annotation.Nonnull;
 public class MotionConclusionScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        String debateConclusion = getCurrentContext().readString("ACTION@" + DebateAction.FIELD_DEBATE_CONCLUSION);
+    public Future<Void> play() {
+        String debateConclusion = context().readString("ACTION@" + DebateAction.FIELD_DEBATE_CONCLUSION);
         getLogger().info("Debate Conclusion: " + debateConclusion);
         return Future.succeededFuture();
     }

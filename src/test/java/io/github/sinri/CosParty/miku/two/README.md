@@ -1,251 +1,144 @@
-# CosParty 讨论工作流教程
+# CosParty 多角色讨论系统示例
 
-## 概述
+## 示例目标
 
-本教程介绍如何使用 CosParty 框架构建一个多角色讨论系统。该工作流模拟了一个技术讨论场景，包含主持人引导、多轮讨论和总结等环节。
+本示例展示如何使用 CosParty 框架构建一个**多角色智能讨论系统**，实现以下功能：
 
-## 工作流架构
+- 模拟真实的技术讨论场景
+- 多个角色基于不同背景和观点进行发言
+- 智能主持人引导讨论进程并做出决策
+- 自动化的讨论流程控制和总结
 
-### 核心组件
+## 核心机制
 
-1. **DiscussionScript** - 定义讨论脚本和字段常量
-2. **StartScene** - 初始化讨论环境和参与者
-3. **OneRoundScene** - 执行一轮讨论，让所有参与者发言
-4. **AfterOneRoundScene** - 主持人分析讨论进展，决定是否继续
-5. **EndScene** - 总结讨论并形成结论
+### 1. 场景驱动的工作流
 
-### 数据流
+系统采用**场景（Scene）**作为基本执行单元，每个场景负责特定的业务逻辑：
 
-```
-Discussion.java (入口)
-    ↓
-DiscussionScript (脚本定义)
-    ↓
-StartScene (初始化)
-    ↓
-OneRoundScene (第一轮讨论)
-    ↓
-AfterOneRoundScene (主持人判断)
-    ↓
-OneRoundScene (继续讨论) 或 EndScene (结束)
-```
+- **StartScene**: 初始化讨论环境，注册参与者和主持人
+- **OneRoundScene**: 让所有参与者轮流发言
+- **AfterOneRoundScene**: 主持人分析讨论进展，决定是否继续
+- **EndScene**: 总结讨论并形成结论
 
-## 详细实现
+### 2. 上下文管理机制
 
-### 1. 脚本定义 (DiscussionScript.java)
+使用 `CosplayContext` 管理全局状态，关键字段包括：
+- `topic`: 讨论主题
+- `members`: 参与者列表
+- `conversation_context_id`: 对话上下文ID
+- `round_count`: 讨论轮次计数
+- `end_flag`: 结束标志
 
-```java
-public class DiscussionScript extends MikuScript {
-    public static final String FIELD_TOPIC = "topic";                    // 讨论主题
-    public static final String FIELD_MEMBERS = "members";                // 参与者列表
-    public static final String FIELD_CONVERSATION_CONTEXT_ID = "conversation_context_id";  // 对话上下文ID
-    public static final String FIELD_CONVERSATION_CODE = "conversation_code";              // 对话代码
-    public static final String FIELD_ROUND_COUNT = "round_count";        // 讨论轮次计数
-}
-```
+### 3. 对话上下文系统
 
-### 2. 启动场景 (StartScene.java)
+通过 `ConversationContext` 管理参与者注册和对话历史：
+- 每个参与者都有独特的身份和指令
+- 自动维护完整的发言记录
+- 支持动态角色注册
 
-**功能**: 初始化讨论环境，注册参与者和主持人
+### 4. 智能决策机制
 
-**关键步骤**:
-- 读取讨论主题和参与者信息
-- 创建对话上下文 (ConversationContext)
-- 注册主持人角色
-- 注册所有参与者角色
-- 创建初始对话并添加主持人开场白
-- 返回下一场景 (OneRoundScene)
+主持人通过 AI 分析讨论内容，基于关键词判断是否继续：
+- 检测"继续讨论"或"结束讨论"关键词
+- 最多支持4轮讨论，避免无限循环
+- 使用不同AI模型处理不同任务
 
-**核心代码**:
-```java
-// 创建对话上下文
-var conversationContext = cosplayContext.createConversationContext();
+## 框架运用要点
 
-// 注册主持人
-Actor actorHost = new Actor()
-    .setActorName("主持人")
-    .setActorInstruction("围绕议题主持讨论，在各方充分发表意见后进行分析总结，并给出自己的结论。");
-conversationContext.registerActor(actorHost);
+### 1. 脚本定义
 
-// 注册参与者
-array.forEach(item -> {
-    var actor = new Actor().reloadDataFromJsonObject((JsonObject) item);
-    conversationContext.registerActor(actor);
-});
-```
+继承 `MikuScript` 并实现 `seekNextSceneInScript` 方法，定义场景流转逻辑。关键是要正确处理条件分支，避免死循环。
 
-### 3. 讨论轮次 (OneRoundScene.java)
+### 2. 场景实现
 
-**功能**: 让所有参与者轮流发言
+每个场景继承 `MikuScene` 并实现 `playInner` 方法。注意异步操作的正确处理，使用 `Future` 链式调用。
 
-**关键步骤**:
-- 获取对话上下文和参与者列表
-- 遍历所有参与者（跳过主持人）
-- 为每个参与者调用 AI 服务生成发言内容
-- 将发言添加到对话历史
-- 更新讨论轮次计数
-- 返回下一场景 (AfterOneRoundScene)
+### 3. 角色管理
 
-**AI 调用逻辑**:
-```java
-// 为每个参与者生成发言
-return mixChatKit.chatStream(SupportedModelEnum.QwenPlus, req -> {
-    // 设置角色身份
-    req.addMessage(msg -> msg
-        .setRole("system")
-        .setTextContent("你是%s，%s\n你正在参与这场主题讨论。"
-            .formatted(actor.getActorName(), actor.getActorInstruction()))
-    );
-    
-    // 提供讨论历史
-    req.addMessage(msg -> msg
-        .setRole("user")
-        .setTextContent("至今为止的讨论发言记录...\n现在论到你发言了。")
-    );
-});
-```
+使用 `DynamicActor` 创建角色，通过 `actorInstruction` 定义角色特点。角色描述要具体明确，影响AI生成质量。
 
-### 4. 轮次后分析 (AfterOneRoundScene.java)
+### 4. AI服务集成
 
-**功能**: 主持人分析讨论进展，决定是否继续
+使用 `MixChatKit` 调用AI服务，注意：
+- 选择合适的模型（QwenPlus/QwenTurbo/QwenMax）
+- 正确设置角色身份和上下文
+- 处理AI响应和错误
 
-**关键步骤**:
-- 检查讨论轮次（最多4轮）
-- 主持人分析当前讨论内容
-- 判断是否需要继续讨论
-- 根据判断返回下一场景
+## 关键实现细节
 
-**判断逻辑**:
-```java
-// 主持人分析讨论进展
-return mixChatKit.chatStream(SupportedModelEnum.QwenTurbo, req -> {
-    req.addMessage(msg -> msg
-        .setRole("user")
-        .setTextContent("""
-            %s
-            作为主持人，你需要分析以上发言，判断是否还有未提及或值得讨论的内容，选择推进话题或准备结束讨论。
-            如果你发现还有需要讨论的内容，请输出"继续讨论"并指出进一步讨论的方向。
-            如果你觉得讨论已经足够充分，请输出"结束讨论"。
-            """.formatted(history.toString()))
-    );
-});
-```
+### 1. 异步迭代处理
 
-### 5. 结束场景 (EndScene.java)
+在 `OneRoundScene` 中使用 `Keel.asyncCallIteratively` 让参与者轮流发言，避免并发冲突。
 
-**功能**: 总结讨论并形成结论
+### 2. 状态持久化
 
-**关键步骤**:
-- 获取完整的讨论历史
-- 主持人进行总结分析
-- 形成最终结论
-- 结束工作流
+通过 `CosplayContext` 的 `writeNumber` 和 `readInteger` 方法管理轮次计数，确保状态正确传递。
 
-## 使用方法
+### 3. 条件判断逻辑
 
-### 1. 创建工作流实例
+在 `AfterOneRoundScene` 中通过字符串匹配判断AI决策，简单有效但需要注意关键词的准确性。
 
-```java
-public class Discussion extends Privateer {
-    @Override
-    protected Future<Void> launchAsPrivateer() {
-        // 创建脚本
-        DiscussionScript script = new DiscussionScript();
-        script.addScene(StartScene.class)
-              .addScene(OneRoundScene.class)
-              .addScene(AfterOneRoundScene.class)
-              .addScene(EndScene.class);
-        script.confirmStartScene(StartScene.class);
+### 4. 对话历史管理
 
-        // 创建引擎
-        MikuEngine engine = new MikuEngine(script);
-        
-        // 设置初始参数
-        return engine.swift(Map.of(
-            DiscussionScript.FIELD_TOPIC, "讨论主题",
-            DiscussionScript.FIELD_MEMBERS, new JsonArray()
-                .add(new Actor()
-                    .setActorName("角色1")
-                    .setActorInstruction("角色描述"))
-                .add(new Actor()
-                    .setActorName("角色2")
-                    .setActorInstruction("角色描述"))
-                .toString()
-        ));
-    }
-}
-```
+使用 `Conversation` 对象自动维护发言记录，每个场景都能获取完整历史。
 
-### 2. 自定义参与者
+## 常见陷阱和解决方案
 
-每个参与者需要定义：
-- **actorName**: 角色名称
-- **actorInstruction**: 角色描述和特点
+### 1. 异步操作处理
 
-示例：
-```java
-new Actor()
-    .setActorName("老黑")
-    .setActorInstruction("拥有很长的企业项目开发经验，特别关注系统稳定性。")
-```
+**陷阱**: 在异步操作中直接返回结果，导致状态丢失
+**解决**: 使用 `Future.compose` 链式调用，确保状态正确传递
 
-### 3. 运行工作流
+### 2. 角色注册顺序
 
-```java
-Discussion discussion = new Discussion();
-discussion.launchAsPrivateer();
-```
+**陷阱**: 角色注册顺序影响发言顺序
+**解决**: 在 `OneRoundScene` 中明确跳过主持人，按注册顺序处理其他角色
+
+### 3. AI响应解析
+
+**陷阱**: AI可能返回格式不标准的响应
+**解决**: 使用简单的关键词匹配，避免复杂的自然语言解析
+
+### 4. 轮次控制
+
+**陷阱**: 无限循环讨论
+**解决**: 设置最大轮次限制，并在主持人判断中设置结束条件
+
+### 5. 上下文传递
+
+**陷阱**: 场景间状态丢失
+**解决**: 使用 `CosplayContext` 统一管理状态，避免局部变量传递
 
 ## 扩展建议
 
 ### 1. 自定义讨论主题
 
-修改 `Discussion.java` 中的 `FIELD_TOPIC` 参数：
-```java
-DiscussionScript.FIELD_TOPIC, "你的讨论主题"
-```
+修改 `Discussion.java` 中的主题参数，确保主题有争议性和讨论价值。
 
-### 2. 调整讨论轮次
+### 2. 角色设计
 
-在 `AfterOneRoundScene.java` 中修改轮次限制：
-```java
-if (Objects.requireNonNullElse(roundCount, 0) > 3) {  // 修改数字
-    return Future.succeededFuture(EndScene.class.getName());
-}
-```
+- 角色背景要具体明确
+- 观点要有冲突性
+- 避免角色过于相似
 
-### 3. 添加新的参与者类型
+### 3. 讨论控制
 
-在 `Discussion.java` 中添加更多参与者：
-```java
-.add(new Actor()
-    .setActorName("新角色")
-    .setActorInstruction("新角色的特点和观点"))
-```
+- 调整最大轮次限制
+- 优化主持人判断逻辑
+- 添加超时机制
 
-### 4. 自定义 AI 模型
+### 4. 性能优化
 
-在各个场景中修改使用的 AI 模型：
-```java
-SupportedModelEnum.QwenPlus    // 参与者发言
-SupportedModelEnum.QwenTurbo   // 主持人分析
-SupportedModelEnum.QwenMax     // 最终总结
-```
+- 选择合适的AI模型
+- 控制并发调用数量
+- 监控API调用成本
 
-## 技术特点
+## 技术特点总结
 
-1. **异步处理**: 使用 Vert.x 的 Future 进行异步操作
-2. **上下文管理**: 通过 CosplayContext 管理全局状态
-3. **对话历史**: 自动维护完整的讨论记录
-4. **角色扮演**: 每个参与者都有独特的身份和特点
-5. **智能判断**: 主持人能够智能分析讨论进展
+1. **模块化设计**: 场景分离，职责明确
+2. **状态管理**: 统一的上下文管理机制
+3. **异步处理**: 基于Vert.x的异步架构
+4. **智能决策**: AI驱动的流程控制
+5. **可扩展性**: 易于添加新场景和角色
 
-## 注意事项
-
-1. 确保 AI 服务配置正确
-2. 参与者角色描述要清晰明确
-3. 讨论主题要具体且有争议性
-4. 注意控制讨论轮次，避免过长
-5. 监控 AI 调用频率和成本
-
-这个工作流展示了 CosParty 框架在构建复杂对话系统方面的强大能力，可以轻松扩展到其他类型的多角色交互场景。
+这个示例展示了 CosParty 框架在构建复杂对话系统方面的强大能力，为其他多角色交互场景提供了良好的参考模板。

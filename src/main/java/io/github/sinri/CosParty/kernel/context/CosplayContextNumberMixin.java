@@ -115,6 +115,14 @@ public interface CosplayContextNumberMixin extends CosplayContextCore {
         }
     }
 
+    default long computedInteger(@Nonnull String key, @Nonnull Function<Integer, Integer> lambda) {
+        synchronized (this) {
+            long x = lambda.apply(readInteger(key, 0));
+            writeNumber(key, x);
+            return x;
+        }
+    }
+
 
     /**
      * 写入数值。

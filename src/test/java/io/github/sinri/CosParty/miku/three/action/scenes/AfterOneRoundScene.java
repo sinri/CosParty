@@ -9,14 +9,14 @@ import javax.annotation.Nonnull;
 public class AfterOneRoundScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        Integer roundCount = getCurrentContext().readInteger(DebateAction.FIELD_ROUND_COUNT);
+    public Future<Void> play() {
+        Integer roundCount = context().readInteger(DebateAction.FIELD_ROUND_COUNT);
         if (roundCount != null && roundCount >= 4) {
             // to conclude
-            getCurrentContext().writeNumber(DebateAction.FIELD_END_FLAG, 1);
+            context().writeNumber(DebateAction.FIELD_END_FLAG, 1);
         } else {
             // continue debate
-            getCurrentContext().writeNumber(DebateAction.FIELD_END_FLAG, 0);
+            context().writeNumber(DebateAction.FIELD_END_FLAG, 0);
         }
         return Future.succeededFuture();
     }

@@ -16,16 +16,21 @@ import java.util.Objects;
 
 import static io.github.sinri.keel.facade.KeelInstance.Keel;
 
-public class OneRoundScene extends MikuScene {
+public class OneRoundScene extends MikuScene implements DiscussionContextMixin {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        String conversationCode = getCurrentContext().readString(DiscussionScript.FIELD_CONVERSATION_CODE);
-        Integer conversationContextId = getCurrentContext().readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
-        ConversationContext conversationContext = getCurrentContext().getConversationContext(conversationContextId);
+    public Future<Void> play() {
+        Conversation conversation;
+        List<Actor> actors;
+        String conversationCode = conversationCode();
+        Integer conversationContextId = conversationContextId();
+        Objects.requireNonNull(conversationContextId);
+        ConversationContext conversationContext = context().getConversationContext(conversationContextId);
 
-        Conversation conversation = conversationContext.getConversation(conversationCode);
-        List<Actor> actors = conversationContext.getActors();
+        conversation = conversationContext.getConversation(conversationCode);
+        Objects.requireNonNull(conversation);
+
+        actors = conversationContext.getActors();
 
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
         MixChatKit mixChatKit = MixChatKit.create(adapter);
@@ -62,7 +67,9 @@ public class OneRoundScene extends MikuScene {
                                         })
                                         .compose(response -> {
                                             String textContent = response.getMessage().getTextContent();
-                                            getLogger().info("As " + actor.getActorName() + ": \n" + textContent);
+                                            getLogger().info("Actor Spoke", ctx -> ctx
+                                                    .put("actor", actor.getActorName())
+                                                    .put("content", textContent));
 
                                             conversation.addSpeech(new Speech().setActorName(actor.getActorName())
                                                                                .setContent(textContent));
@@ -70,9 +77,7 @@ public class OneRoundScene extends MikuScene {
                                         });
                    })
                    .compose(oneRoundOver -> {
-                       Integer roundCount = getCurrentContext().readInteger(DiscussionScript.FIELD_ROUND_COUNT);
-                       getCurrentContext().writeNumber(DiscussionScript.FIELD_ROUND_COUNT, Objects.requireNonNullElse(roundCount, 0) + 1);
-
+                       increaseRoundCount();
                        return Future.succeededFuture();
                    });
     }

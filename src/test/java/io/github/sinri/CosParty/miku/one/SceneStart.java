@@ -16,11 +16,11 @@ public class SceneStart extends MikuScene {
 
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
+    public Future<Void> play() {
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
         MixChatKit mixChatKit = MixChatKit.create(adapter);
 
-        var rawQuestion = getCurrentContext().readString("raw_question");
+        var rawQuestion = context().readString("raw_question");
         return mixChatKit.chatStream(
                                  SupportedModelEnum.QwenPlus,
                                  req -> req
@@ -35,7 +35,7 @@ public class SceneStart extends MikuScene {
                          )
                          .compose(resp -> {
                              String textContent = resp.getMessage().getTextContent();
-                             getCurrentContext().writeString("first_answer", textContent);
+                             context().writeString("first_answer", textContent);
                              getLogger().info("first_answer: " + textContent);
                              return Future.succeededFuture();
                          });

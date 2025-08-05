@@ -11,6 +11,8 @@ public class Debate extends Privateer {
     protected Future<Void> launchAsPrivateer() {
         DebateScript debateScript = new DebateScript();
         MikuEngine mikuEngine = new MikuEngine(debateScript);
-        return mikuEngine.startup(Map.of());
+        return mikuEngine.startup(ctx->{
+            ctx.writeString("subject","中国在遭受印度武装侵略时，要不要征服印度");
+        });
     }
 }

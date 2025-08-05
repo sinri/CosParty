@@ -2,6 +2,8 @@ package io.github.sinri.CosParty.kernel.context;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Map;
+import java.util.Set;
 
 public interface CosplayContextCore {
     /**
@@ -22,8 +24,18 @@ public interface CosplayContextCore {
      *
      * @param key   数据键
      * @param value 字符串值
-     * @return 当前上下文实例，支持链式调用
      */
     void writeString(@Nonnull String key, @Nonnull String value);
 
+    /**
+     * @return a snapshot of the set of keys, expected to be unmodifiable.
+     */
+    @Nonnull
+    Set<String> keySet();
+
+    /**
+     * @return a snapshot of the entries as a map, expected to be unmodifiable.
+     */
+    @Nonnull
+    Map<String, String> toMap();
 }

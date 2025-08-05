@@ -16,10 +16,10 @@ import javax.annotation.Nonnull;
 public class DebateEndScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        String conversationCode = getCurrentContext().readString(DebateAction.FIELD_CONVERSATION_CODE);
+    public Future<Void> play() {
+        String conversationCode = context().readString(DebateAction.FIELD_CONVERSATION_CODE);
 
-        ConversationContext conversationContext = getCurrentContext().getConversationContext(0);
+        ConversationContext conversationContext = context().getConversationContext(0);
         Conversation conversation = conversationContext.getConversation(conversationCode);
 
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
@@ -61,7 +61,7 @@ public class DebateEndScene extends MikuScene {
 
                              // conversation.addSpeech(new Speech().setActorName(moderatorActor.getActorName()).setContent(textContent));
 
-                             getCurrentContext().writeString(DebateAction.FIELD_DEBATE_CONCLUSION, textContent);
+                             context().writeString(DebateAction.FIELD_DEBATE_CONCLUSION, textContent);
                              return Future.succeededFuture();
                          });
     }

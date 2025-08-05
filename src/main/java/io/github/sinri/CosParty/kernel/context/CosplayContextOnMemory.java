@@ -3,10 +3,7 @@ package io.github.sinri.CosParty.kernel.context;
 import io.github.sinri.CosParty.kernel.context.conversation.ConversationContext;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -74,6 +71,18 @@ class CosplayContextOnMemory implements CosplayContext {
     @Override
     public void writeString(@Nonnull String key, @Nonnull String value) {
         contextMap.put(key, value);
+    }
+
+    @Nonnull
+    @Override
+    public Set<String> keySet() {
+        return Collections.unmodifiableSet(contextMap.keySet());
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, String> toMap() {
+        return Collections.unmodifiableMap(contextMap);
     }
 
     /**

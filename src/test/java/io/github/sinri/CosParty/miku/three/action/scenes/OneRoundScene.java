@@ -19,10 +19,10 @@ import java.util.Objects;
 public class OneRoundScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        String conversationCode = getCurrentContext().readString(DebateAction.FIELD_CONVERSATION_CODE);
+    public Future<Void> play() {
+        String conversationCode = context().readString(DebateAction.FIELD_CONVERSATION_CODE);
 
-        ConversationContext conversationContext = getCurrentContext().getConversationContext(0);
+        ConversationContext conversationContext = context().getConversationContext(0);
         Conversation conversation = conversationContext.getConversation(conversationCode);
 
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
@@ -36,8 +36,8 @@ public class OneRoundScene extends MikuScene {
                     return actorSay(mixChatKit, negativeActor, conversation);
                 })
                 .compose(v -> {
-                    Integer roundCount = getCurrentContext().readInteger(DebateAction.FIELD_ROUND_COUNT);
-                    getCurrentContext().writeNumber(DebateAction.FIELD_ROUND_COUNT, Objects.requireNonNullElse(roundCount, 0) + 1);
+                    Integer roundCount = context().readInteger(DebateAction.FIELD_ROUND_COUNT);
+                    context().writeNumber(DebateAction.FIELD_ROUND_COUNT, Objects.requireNonNullElse(roundCount, 0) + 1);
 
                     return Future.succeededFuture();
                 });

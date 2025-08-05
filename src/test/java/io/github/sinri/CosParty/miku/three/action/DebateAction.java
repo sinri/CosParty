@@ -58,7 +58,7 @@ public class DebateAction extends MikuAction {
         } else if (Objects.equals(currentSceneCode, OneRoundScene.class.getName())) {
             return AfterOneRoundScene.class.getName();
         } else if (Objects.equals(currentSceneCode, AfterOneRoundScene.class.getName())) {
-            Integer endFlag = getContextOnThisActionScope().readInteger(DebateAction.FIELD_END_FLAG);
+            Integer endFlag = context().readInteger(DebateAction.FIELD_END_FLAG);
             if (endFlag != null && endFlag == 1) {
                 return DebateEndScene.class.getName();
             } else {
@@ -75,12 +75,12 @@ public class DebateAction extends MikuAction {
         String outerFieldForDebateMotion = getMappedFieldNameInOuterScope(DebateAction.FIELD_DEBATE_MOTION);
         System.out.println("outerScopeContext: " + outerScopeContext.getContextId());
         System.out.println("key: " + outerFieldForDebateMotion);
-        getContextOnThisActionScope().pullFromAnotherContext(
+        context().pullFromAnotherContext(
                 outerScopeContext,
                 outerFieldForDebateMotion,
                 DebateAction.FIELD_DEBATE_MOTION
         );
-        ConversationContext conversationContext = getContextOnThisActionScope().createConversationContext();
+        ConversationContext conversationContext = context().createConversationContext();
         conversationContext.registerActor(moderatorActor)
                            .registerActor(affirmativeActor)
                            .registerActor(negativeActor);
@@ -89,7 +89,7 @@ public class DebateAction extends MikuAction {
     @Override
     public void output(@Nonnull CosplayContext outerScopeContext) {
         outerScopeContext.pullFromAnotherContext(
-                this.getContextOnThisActionScope(),
+                this.context(),
                 DebateAction.FIELD_DEBATE_CONCLUSION,
                 getMappedFieldNameInOuterScope(DebateAction.FIELD_DEBATE_CONCLUSION)
         );

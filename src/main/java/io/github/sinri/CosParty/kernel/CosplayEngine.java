@@ -5,6 +5,7 @@ import io.github.sinri.keel.logger.event.KeelEventLog;
 import io.github.sinri.keel.logger.issue.center.KeelIssueRecordCenter;
 import io.github.sinri.keel.logger.issue.recorder.KeelIssueRecorder;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -34,6 +35,7 @@ public abstract class CosplayEngine {
     protected CosplayContext contextOnScriptScope;
     @Nonnull
     protected KeelIssueRecordCenter issueRecordCenter;
+    private KeelIssueRecorder<KeelEventLog> logger;
 
     /**
      * 构造角色扮演引擎实例。
@@ -43,8 +45,18 @@ public abstract class CosplayEngine {
     public CosplayEngine(@Nonnull CosplayScript script) {
         this.engineId = getClass().getName() + "@" + UUID.randomUUID();
         this.script = script;
-        this.issueRecordCenter = KeelIssueRecordCenter.outputCenter();
+        this.issueRecordCenter = buildIssueRecordCenter();
         this.actionStack = new Stack<>();
+    }
+
+    /**
+     * 在引擎初始化时会调用本方法初始化本类应利用的日志记录中心。
+     *
+     * @return 引擎利用的日志记录中心
+     */
+    @Nonnull
+    protected KeelIssueRecordCenter buildIssueRecordCenter() {
+        return KeelIssueRecordCenter.outputCenter();
     }
 
     /**
@@ -79,7 +91,7 @@ public abstract class CosplayEngine {
         if (currentAction == null) {
             return getContextOnScriptScope();
         } else {
-            return currentAction.getContextOnThisActionScope();
+            return currentAction.context();
         }
     }
 
@@ -119,6 +131,8 @@ public abstract class CosplayEngine {
     }
 
     private Future<Void> runAfterInitialization() {
+        getLogger().info("engine routine start");
+
         CosplayScene startingScene = script.getStartingScene();
         return startingScene.initialize(this)
                             .compose(v -> {
@@ -129,14 +143,20 @@ public abstract class CosplayEngine {
                                         repeatedlyCallTask.stop();
                                         return Future.succeededFuture();
                                     }
-                                    return currentScene.play(this)
+
+                                    getLogger().info("next scene to run on engine: " + currentScene.getSceneCode());
+
+                                    return currentScene.play()
                                                        .compose(currentScenePlayed -> {
                                                            return seekNextSceneAfterCurrentCosplayScenePlayed();
                                                        });
                                 });
+                            })
+                            .compose(end -> {
+                                getLogger().info("engine routine end");
+                                return Future.succeededFuture();
                             });
     }
-
 
     private Future<Void> seekNextSceneAfterCurrentCosplayScenePlayed() {
         CosplayScene currentScene = currentSceneRef.get();
@@ -156,7 +176,7 @@ public abstract class CosplayEngine {
                         return this.confirmNextSceneInScriptScope(nextSceneInScript);
                     } else {
                         currentAction = actionStack.peek();
-                        leftAction.output(currentAction.getContextOnThisActionScope());
+                        leftAction.output(currentAction.context());
 
                         String nextSceneInOuterAction = currentAction.seekNextSceneInAction(leftAction.getSceneCode());
                         if (nextSceneInOuterAction == null) {
@@ -212,26 +232,44 @@ public abstract class CosplayEngine {
         }
     }
 
+    @Deprecated(forRemoval = true)
+    public Future<Void> startup(@Nonnull Map<String, String> inputMap) {
+        return startup(ctx -> {
+            for (var entry : inputMap.entrySet()) {
+                ctx.writeString(entry.getKey(), entry.getValue());
+            }
+        });
+    }
+
     /**
      * 启动引擎并开始执行脚本。
      *
-     * @param inputMap 初始输入参数
      * @return 执行完成的Future
      */
-    public Future<Void> startup(@Nonnull Map<String, String> inputMap) {
-        KeelIssueRecorder<KeelEventLog> logger = this.generateLogger();
+    public Future<Void> startup(@Nonnull Handler<CosplayContext> contextHandler) {
+        this.logger = this.generateLogger();
         return this.initialize()
                    .compose(initialized -> {
                        CosplayContext ctx = getCurrentContext();
-                       for (var entry : inputMap.entrySet()) {
-                           ctx.writeString(entry.getKey(), entry.getValue());
-                       }
+                       contextHandler.handle(ctx);
 
                        return runAfterInitialization();
                    })
                    .onFailure(throwable -> {
-                       logger.exception(throwable, "CosplayEngine Failed");
+                       getLogger().exception(throwable, "CosplayEngine Failed");
                    });
+    }
+
+    /**
+     * 获取引擎的日志记录器。
+     *
+     * @return 日志记录器实例，用于记录引擎运行时的事件和问题
+     * @throws IllegalStateException 如果日志记录器尚未初始化
+     */
+    @Nonnull
+    public KeelIssueRecorder<KeelEventLog> getLogger() throws IllegalStateException {
+        if (logger == null) throw new IllegalStateException();
+        return logger;
     }
 
     /**
@@ -250,7 +288,7 @@ public abstract class CosplayEngine {
      * @return 包含引擎状态信息的日志记录器
      */
     @Nonnull
-    public final KeelIssueRecorder<KeelEventLog> generateLogger() {
+    public KeelIssueRecorder<KeelEventLog> generateLogger() {
         return getIssueRecordCenter().generateIssueRecorder("CosplayEngine", () -> {
             KeelEventLog log = new KeelEventLog();
 

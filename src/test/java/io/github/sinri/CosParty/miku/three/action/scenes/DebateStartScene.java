@@ -13,16 +13,16 @@ import javax.annotation.Nonnull;
 public class DebateStartScene extends MikuScene {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        String debateTopic = getCurrentContext().readString(DebateAction.FIELD_DEBATE_MOTION);
+    public Future<Void> play() {
+        String debateTopic = context().readString(DebateAction.FIELD_DEBATE_MOTION);
         getLogger().info("[DebateStartScene] debateTopic: " + debateTopic);
 
-        ConversationContext conversationContext = getCurrentContext().getConversationContext(0);
+        ConversationContext conversationContext = context().getConversationContext(0);
 
         Conversation conversation = new Conversation();
         conversationContext.registerConversation(conversation);
 
-        getCurrentContext().writeString(DebateAction.FIELD_CONVERSATION_CODE, conversation.getConversationCode());
+        context().writeString(DebateAction.FIELD_CONVERSATION_CODE, conversation.getConversationCode());
 
         conversation.addSpeech(new Speech()
                 .setActorName(ModeratorActor.ACTOR_NAME)

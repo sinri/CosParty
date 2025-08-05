@@ -12,27 +12,27 @@ import io.vertx.core.Future;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-public class AfterOneRoundScene extends MikuScene {
+public class AfterOneRoundScene extends MikuScene implements DiscussionContextMixin {
     @Nonnull
     @Override
-    protected Future<Void> playInner() {
-        Integer roundCount = getCurrentContext().readInteger(DiscussionScript.FIELD_ROUND_COUNT);
+    public Future<Void> play() {
+        Conversation conversation;
+        Integer roundCount = roundCount();
         if (Objects.requireNonNullElse(roundCount, 0) > 3) {
             return Future.succeededFuture();
         }
 
-        String conversationCode = getCurrentContext().readString(DiscussionScript.FIELD_CONVERSATION_CODE);
-        Integer conversationContextId = getCurrentContext().readInteger(DiscussionScript.FIELD_CONVERSATION_CONTEXT_ID);
+        String conversationCode = conversationCode();
+        Integer conversationContextId = conversationContextId();
         Objects.requireNonNull(conversationContextId);
-        ConversationContext conversationContext = getCurrentContext().getConversationContext(conversationContextId);
-        Conversation conversation = conversationContext.getConversation(conversationCode);
+        ConversationContext conversationContext = context().getConversationContext(conversationContextId);
+        conversation = conversationContext.getConversation(conversationCode);
         Objects.requireNonNull(conversation);
 
         NativeMixServiceAdapter adapter = new NativeMixServiceAdapter();
         MixChatKit mixChatKit = MixChatKit.create(adapter);
 
         return mixChatKit.chatStream(SupportedModelEnum.QwenTurbo, req -> {
-
                              Iterable<Speech> iterableOfSpeechList = conversation.getIterableOfSpeechList();
                              StringBuilder history = new StringBuilder();
                              history.append("至今为止的讨论发言记录如下：\n");
@@ -55,10 +55,12 @@ public class AfterOneRoundScene extends MikuScene {
                          })
                          .compose(response -> {
                              String textContent = response.getMessage().getTextContent();
-                             getLogger().info("As HOST:\n" + textContent);
+                             getLogger().info("Actor Spoke", ctx -> ctx
+                                     .put("actor", "HOST")
+                                     .put("content", textContent));
 
                              if (textContent.contains("结束讨论")) {
-                                 getCurrentContext().writeNumber(DiscussionScript.FIELD_END_FLAG, 1);
+                                 endFlag(1);
                                  return Future.succeededFuture();
                              }
 

@@ -30,8 +30,13 @@ public interface CosplayAction extends CosplayScene {
      */
     void output(@Nonnull CosplayContext outerScopeContext);
 
+    /**
+     * As action holds its own independent context...
+     *
+     * @return the context on action scope.
+     */
     @Nonnull
-    CosplayContext getContextOnThisActionScope();
+    CosplayContext context() throws IllegalStateException;
 
     @Nullable
     String seekNextSceneInAction(@Nonnull String currentSceneCode);

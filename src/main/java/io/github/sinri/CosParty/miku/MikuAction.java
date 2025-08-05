@@ -18,9 +18,9 @@ import java.util.*;
  * 子类需要实现具体的业务逻辑和场景初始化。
  */
 public abstract class MikuAction implements CosplayAction {
-    // private final Map<String, CosplayScene> cachedSceneMap;
     private final Set<String> sceneCodeSet;
     private final String instanceId;
+    private CosplayEngine engine;
     private CosplayContext actionContext;
     private KeelIssueRecorder<KeelEventLog> logger;
 
@@ -43,8 +43,8 @@ public abstract class MikuAction implements CosplayAction {
 
     @Nonnull
     @Override
-    public final CosplayContext getContextOnThisActionScope() {
-        Objects.requireNonNull(actionContext);
+    public final CosplayContext context() throws IllegalStateException {
+        if (actionContext == null) throw new IllegalStateException();
         return actionContext;
     }
 
@@ -78,9 +78,9 @@ public abstract class MikuAction implements CosplayAction {
     }
 
     /**
-     * This method is available in {@link MikuAction#play(CosplayEngine)} scope.
+     * This method is available in {@link MikuAction#play()} scope.
      *
-     * @return the logger created in the beginning of {@link MikuAction#play(CosplayEngine)}
+     * @return the logger created in the beginning of {@link MikuAction#play()}
      */
     protected final KeelIssueRecorder<KeelEventLog> getLogger() {
         Objects.requireNonNull(logger);
@@ -89,15 +89,19 @@ public abstract class MikuAction implements CosplayAction {
 
     @Override
     public Future<Void> initialize(@Nonnull CosplayEngine engine) {
+        this.engine = engine;
         this.logger = engine.generateLogger();
         this.actionContext = buildContextForThisActionScope();
         return Future.succeededFuture();
     }
 
-    @Nonnull
-    @Override
-    public final Future<Void> play(@Nonnull CosplayEngine engine) {
-        return Future.succeededFuture();
+    public final CosplayEngine engine() {
+        return engine;
     }
 
+    @Nonnull
+    @Override
+    public Future<Void> play() {
+        return Future.succeededFuture();
+    }
 }

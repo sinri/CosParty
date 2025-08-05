@@ -22,6 +22,7 @@ import java.util.UUID;
 public abstract class MikuScene implements CosplayScene {
     private final String instanceId;
     private KeelIssueRecorder<KeelEventLog> logger;
+    private CosplayEngine engine;
     private CosplayContext currentContext;
 
     /**
@@ -46,7 +47,9 @@ public abstract class MikuScene implements CosplayScene {
 
     @Override
     public Future<Void> initialize(@Nonnull CosplayEngine engine) {
+        this.engine = engine;
         logger = engine.generateLogger();
+        this.currentContext = engine().getCurrentContext();
         return Future.succeededFuture();
     }
 
@@ -62,27 +65,14 @@ public abstract class MikuScene implements CosplayScene {
 
     @Nonnull
     @Override
-    public final Future<Void> play(@Nonnull CosplayEngine engine) {
-        this.currentContext = engine.getCurrentContext();
-        return playInner();
+    public CosplayContext context() throws IllegalStateException {
+        if(currentContext==null){
+            throw new IllegalStateException();
+        }
+        return currentContext;
     }
 
-    /**
-     * 执行场景的核心业务逻辑。
-     * <p>
-     * 子类必须实现此方法来提供具体的场景执行逻辑。
-     */
-    @Nonnull
-    abstract protected Future<Void> playInner();
-
-    /**
-     * 获取当前场景的上下文。
-     *
-     * @return 当前上下文实例
-     */
-    @Nonnull
-    protected final CosplayContext getCurrentContext() {
-        Objects.requireNonNull(currentContext);
-        return currentContext;
+    public final CosplayEngine engine() {
+        return engine;
     }
 }
